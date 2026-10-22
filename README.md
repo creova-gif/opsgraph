@@ -16,6 +16,7 @@ Core loop: `Company Profile -> Required State -> Workspace Inventory -> Gap Repo
 - `gap_engine/` - required-vs-observed gap analysis engine & infrastructure scoring
 - `compiler/` - workspace compiler: creates folder taxonomy, Master Register, and governed templates
 - `guardian/` - company guardian: weekly drift monitoring, policy staleness, and health digest
+- `dashboard/` - interactive visual HTML dashboard & local preview server
 - `docs/pilot/` - concierge pilot offer one-pager, 20-step delivery checklist, intake form
 - `docs/strategy/` - viability brief, execution blueprint, YC playbook (source of truth for decisions)
 - `schema/company-profile.schema.json` - onboarding output (P0)
@@ -33,5 +34,6 @@ dump templates - never claim compliance. Delete is never allowed in v1.
 - [x] **Gap Analysis Engine (P1):** Required vs observed diff, domain scorecards, and 0-100% Infrastructure Score (`gap_engine/`)
 - [x] **Workspace Compiler Prototype (P1):** Dry-run preview, folder taxonomy, Master Register sheet, and template stubs with provenance (`compiler/`)
 - [x] **Company Guardian Prototype (P2):** Continuous drift detection, staleness alerts, duplicate collisions, and weekly Health Digest (`guardian/`)
+- [x] **Interactive Visual Dashboard:** Standalone single-file HTML report with 0–100% dial, gap matrix, and drift feed (`dashboard/`)
 - [x] **Pilot Offer Kit:** 48-Hour offer one-pager, delivery checklist, intake form (`docs/pilot/`)
 - [x] **Evidence Room:** 9-folder structure + draft YC application answers (`evidence-room/`)

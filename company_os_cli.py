@@ -167,6 +167,31 @@ def cmd_guardian(args):
         print(format_health_digest_markdown(digest))
 
 
+def cmd_dashboard(args):
+    from dashboard.generator import DashboardGenerator
+
+    profile_path = Path(args.profile)
+    with open(profile_path, "r", encoding="utf-8") as f:
+        profile_data = json.load(f)
+
+    scanner = WorkspaceScanner()
+    inventory_snapshot = scanner.load_snapshot(Path(args.inventory))
+
+    gen = DashboardGenerator()
+    out_path = Path(args.output).resolve()
+    gen.generate(profile_data, inventory_snapshot, output_path=out_path)
+    print(f"📊 Interactive Dashboard generated at: {out_path}")
+
+    if args.open:
+        import webbrowser
+        webbrowser.open(f"file://{out_path}")
+
+
+def cmd_serve(args):
+    from dashboard.server import serve_dashboard
+    serve_dashboard(args.profile, args.inventory, port=args.port, host=args.host)
+
+
 def cmd_demo(args):
     # Delegate to demo runner
     from demo.run_demo import run_full_demo
@@ -216,6 +241,22 @@ def main():
     p_guardian.add_argument("--register", default=None, help="Optional Master Register JSON")
     p_guardian.add_argument("--format", choices=["markdown", "json"], default="markdown")
     p_guardian.set_defaults(func=cmd_guardian)
+
+    # dashboard
+    p_dash = subparsers.add_parser("dashboard", help="Generate single-file interactive HTML readiness dashboard")
+    p_dash.add_argument("profile", help="Path to company profile JSON")
+    p_dash.add_argument("inventory", help="Path to workspace inventory JSON")
+    p_dash.add_argument("--output", default="dashboard.html", help="Output HTML file path")
+    p_dash.add_argument("--open", action="store_true", help="Open generated dashboard in default browser")
+    p_dash.set_defaults(func=cmd_dashboard)
+
+    # serve
+    p_serve = subparsers.add_parser("serve", help="Launch local preview server for interactive dashboard")
+    p_serve.add_argument("--profile", default="examples/seed-b2b-saas.json", help="Path to company profile JSON")
+    p_serve.add_argument("--inventory", default="examples/sample-drive-inventory.json", help="Path to workspace inventory JSON")
+    p_serve.add_argument("--port", type=int, default=8080, help="Local port to serve on")
+    p_serve.add_argument("--host", default="127.0.0.1", help="Host interface")
+    p_serve.set_defaults(func=cmd_serve)
 
     # demo
     p_demo = subparsers.add_parser("demo", help="Run end-to-end 7-moment live simulation for YC demo recording")
