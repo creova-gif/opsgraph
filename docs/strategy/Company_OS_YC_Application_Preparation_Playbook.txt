@@ -1,0 +1,373 @@
+VENTURE BUILD SYSTEM
+YC Application Preparation Playbook — Company OS
+Winter 2027 application sprint: traction, narrative, demo, application and interview readiness
+Founder working document • Version 1.0 • October 2026
+Application objective
+Do not try to “win YC with the idea.” Use the next application sprint to prove that a specific group of founders has an urgent problem, that you can solve it quickly, that they will pay, and that your learning compounds into a very large software company.
+
+Current recommended application story
+Today: turn Google Workspace into a startup’s AI-maintained operating system. Wedge: seed/Series A B2B startups facing enterprise, fundraising or compliance-readiness pressure. Long-term: an intelligent operating layer that models what a company should have, observes what actually exists, and continuously reconciles the two.
+
+Application control
+Working answer
+Company
+Company OS (working name; replace when final)
+One-liner
+We turn a startup’s existing Google Workspace into a complete, AI-maintained company operating system.
+Initial customer
+5–50 person B2B technology startups, Seed–Series A
+Urgent trigger
+Enterprise sales, fundraising/data room, SOC 2/security requests, rapid hiring
+What is built before application
+Paid concierge installs + working Google Workspace inventory/gap demo + Guardian prototype
+What must be true by submission
+At least 3 serious pilots targeted; ideally 1–3 paying customers; measurable before/after result; clear founder learning.
+
+
+1. YC framing
+1.1 The story in one paragraph
+Startups build products first and reconstruct their internal operating infrastructure later—usually when an enterprise customer, investor, auditor, or hiring surge forces them to. Company OS connects to the workspace they already use, understands the company’s stage and context, identifies what operational infrastructure should exist, creates the approved missing structure and artifacts, and continuously monitors drift. We are starting with Google Workspace and B2B startups because the problem is acute and measurable there; the long-term product is a cross-platform operating graph for companies.
+1.2 Why now
+AI makes it economically possible to reason over unstructured company documents and produce context-specific drafts, mappings and explanations.
+Workspaces and APIs make company state observable enough to build a maintenance loop rather than deliver a one-time consulting binder.
+Agents are becoming common, which increases—not decreases—the need for a governed company model, permissions, provenance and shared operational state.
+Enterprise buyers, investors and regulators continue to demand evidence, ownership and repeatable processes from startups earlier in their life.
+1.3 RFS alignment without force-fitting
+YC signal
+Relevant Company OS insight
+How to mention it
+AI-native compliance infrastructure
+Compliance can be one readiness view derived from company state
+“The RFS reinforced a problem we were already encountering; we are broader than compliance.”
+Small / bespoke software and agents
+Many operational workflows are currently consultant- or spreadsheet-driven
+Show one repeated workflow becoming software
+Shared / multiplayer agents
+Company Guardian is a shared organizational agent, not a private chat
+Demo approvals and common company state
+New operating systems
+Model humans, processes, artifacts, evidence and agents as a system
+Keep as long-term vision; do not over-theorize the application
+
+
+2. What YC needs to believe
+Belief
+Evidence to produce before applying
+The problem is real
+Founder interviews with concrete incidents: lost deal time, data-room scramble, compliance request, onboarding chaos
+You understand it unusually well
+Show specific judgment calls and failure modes learned from actual implementations
+People will pay
+At least one paid implementation; preferably three
+Software can replace repeated manual work
+Same onboarding + repeated core artifacts + measurable reusable workflow
+The market can be huge
+Explain expansion from readiness wedge → company operating graph → multiple stacks/verticals
+You can build fast
+Working demo and weekly product changes driven by pilot learning
+You are focused
+One ICP, one initial stack, one trigger—not every startup/every stack in v1
+
+3. Founder narrative
+Use a factual founder story rather than credentials inflation. The strongest story is: while building and operating companies, you repeatedly had to create document systems, governance, policies, registers, engineering/research standards and compliance-ready structures. During a recent company operating-system build, the work required repeated judgment about taxonomy, numbering, provenance, missing claims, ownership and evidence. That revealed a repeatable product pattern: profile the company → model required state → compare with actual workspace → compile missing infrastructure → continuously maintain it.
+Narrative rule
+Do not say “I have many ventures, so I can do anything.” YC may read that as lack of focus. Say: “Repeated operating pain across my work led me to this problem; I am choosing this company and testing it now.”
+
+
+4. Application one-liner and descriptions
+Recommended one-liner
+We turn a startup’s existing Google Workspace into a complete, AI-maintained company operating system.
+30-second explanation
+A founder connects Google Workspace and tells us about the company. We inspect what already exists, identify missing operating infrastructure, create the approved folder structure, registers, policies and readiness artifacts, and then a Company Guardian monitors the workspace for stale, missing, duplicated or ownerless documents. We start with B2B startups preparing for enterprise customers, fundraising or compliance.
+Long-term vision
+The operating layer that knows what a company should have, what it actually has, and what needs to happen next—across people, processes, documents, evidence and AI agents.
+5. Questions likely to matter in the written application
+Question
+What a strong answer should contain
+Evidence needed
+What is your company going to make?
+Plain workflow and output; no jargon
+Working demo screens
+Where do you live / where will company be?
+Direct answer and willingness to focus
+Decision before submit
+How far along are you?
+Exact pilots, paying customers, product capability, week-over-week progress
+Metrics log
+How long have founders worked on this?
+Specific start date and full/part-time status
+Timeline
+How many active users/customers?
+Exact counts; distinguish pilots, paid, active, retained
+CRM/pilot tracker
+Revenue?
+Exact revenue, pricing and dates
+Invoices/receipts
+Why this idea?
+Firsthand pain + repeated pattern + what outsiders miss
+Case study
+Competitors?
+Name serious players; explain the dimension you own
+Competitive matrix
+How do/will you make money?
+Simple B2B SaaS + early implementation
+Price tests
+Category / market?
+Start narrow; show credible expansion
+ICP/TAM narrative
+Other ideas considered?
+Be concise; demonstrate focus on current company
+Founder decision
+
+
+6. Draft answer bank — adapt to exact YC form
+What are you making?
+We are building Company OS, software that turns an existing Google Workspace into a startup’s operating infrastructure. A founder connects their workspace and answers a structured onboarding. We inventory the current state, identify missing company infrastructure, generate and organize approved artifacts such as policies, registers, decision records and investor-readiness documents, and then monitor changes with an AI Company Guardian. The first users are B2B startups preparing for enterprise customers, fundraising or compliance.
+Why did you pick this idea?
+I kept encountering the same problem while building and operating companies: the product gets built, but the company infrastructure stays scattered across drives and people’s heads until a customer, investor or audit forces cleanup. In a recent operating-system build I had to make dozens of repeated decisions about taxonomy, ownership, document numbering, missing evidence and what could safely be asserted. The pattern was systematic enough to turn into software.
+What do you understand that others do not?
+The folder tree and templates are not the product. The real product is a required-state model of the company: given its stage, industry, jurisdiction, team and commitments, what should exist—and how does that compare with what exists today? Once that model exists, compliance, investor readiness, onboarding and document maintenance become different views over the same operating graph.
+Who are your competitors?
+Vanta, Drata and Secureframe automate compliance; Notion, Google Workspace and Microsoft 365 are workspaces; Slite and similar products maintain knowledge; fractional COOs manually create operating systems. We are initially different in that we compile and maintain general company infrastructure inside the customer’s existing workspace, using a required-state model rather than being a new workspace or only a compliance product. This distinction still needs to be proven with customers.
+How will you make money?
+We are testing an implementation fee of roughly $750–$2,500 for early customers plus $99–$499/month for the maintenance agent. The long-term model is primarily recurring B2B SaaS, with higher-priced industry/framework packs and portfolio deployments for accelerators or investors if those channels validate.
+
+7. Traction sprint
+Target by application
+Minimum
+Strong
+Exceptional
+Founder/customer interviews
+10
+20+
+30+ with a narrow repeated trigger
+Pilot commitments
+2
+3–5
+5+ with waitlist
+Paying customers
+1
+2–3
+5+
+Revenue
+Any real payment
+$2k–$5k total
+$10k+ or recurring signal
+Repeatability
+Same onboarding used twice
+70%+ core structure repeats
+Software automates repeated core
+Case study
+One before/after
+Two measurable cases
+Customer quote + renewal + referral
+Product
+Clickable/demo prototype
+Working workspace inventory + gap engine
+Guardian catches a real issue after install
+
+Priority order
+Payment > usage > measurable outcome > testimonials > research documents. Do not sacrifice customer contact to make the application look polished.
+
+8. Customer interview script
+Tell me about the last time a customer, investor, employee or auditor asked you for company documents and you could not answer immediately.
+What did you have to create or search for? Who did the work? How long did it take?
+What is scattered or inconsistent today: policies, contracts, decisions, employee docs, security evidence, investor materials?
+What happens if you do nothing for the next six months?
+Have you paid a consultant, compliance tool, lawyer or operator to solve part of this? How much?
+If we could install the missing operating infrastructure inside your current workspace in 48 hours, what would make that worth paying for now?
+Which actions could software safely perform automatically and which would require your approval?
+Would you pay $X for the installation this month? If not, why not?
+Who else has this exact problem right now? Will you introduce me?
+
+9. Demo design
+Demo moment
+What to show
+YC signal
+1. Connect
+Google Workspace authorization with narrow scopes
+Real product, not slideware
+2. Profile
+Company stage, team, geography, enterprise/compliance trigger
+Context-driven product
+3. Inventory
+Real file/folder count and current-state findings
+Understands messy reality
+4. Gap map
+Required vs observed; explain why each requirement exists
+Core insight
+5. Compile
+Create approved structure/registers/templates
+Action, not analysis only
+6. Health
+Before/after readiness and unresolved founder inputs
+Measurable result
+7. Guardian
+Detect one post-installation drift event
+Recurring value
+
+Keep the video/demo under a few minutes unless the application explicitly allows longer.
+Show real product behavior and real customer workspace data only with permission; otherwise use a realistic demo tenant.
+Do not spend time on cinematic branding. YC needs to understand what it does and why anyone cares.
+Use one real surprising finding from a pilot if permission allows.
+10. Application video preparation
+Prepare a plain founder video with a direct structure: who you are; what you are building; the specific user/problem; what you have built or sold; why you are the person pursuing it; and one concrete traction fact. Follow the current application instructions exactly when recording because video requirements can change.
+Founder-video rule
+No agency-style promo reel, background music, buzzword montage or lengthy origin story. Clarity and founder credibility beat production value.
+
+
+11. YC interview preparation
+Interview answers should be short, numerical and responsive. Prepare deeper evidence, but answer the exact question first.
+Likely challenge
+Good response structure
+Why isn’t this just Notion?
+Not a workspace; we model required company state and compile/maintain it inside the existing workspace. Then show usage.
+Why won’t Google/Microsoft build this?
+They provide horizontal workspace primitives; our narrow company operating ontology and cross-platform readiness logic are the product. More importantly, show customers choosing you now.
+Is this consulting?
+Today we deliberately do manual work to learn. Show the percentage of delivery already repeated/automated and the path to high-margin software.
+Why does a startup pay before it hurts?
+We do not sell before pain. We target concrete triggers: enterprise deal, fundraise, security request, hiring. Show conversion by trigger.
+How big can this be?
+Start with readiness; expand into shared company operating graph across functions, stacks and agents.
+Why you?
+Firsthand operating pain + ability to build + speed of customer learning. Avoid a resume recital.
+What if Vanta expands?
+Compliance is one view; Company OS models general operating state. Still acknowledge that competitive encroachment is real.
+How accurate/safe is the agent?
+Explain provenance, approval gates, no autonomous compliance claims, audit trail and measured false positives.
+
+12. Rapid-fire question bank
+How many people have you spoken to this week?
+How many are paying?
+What did the last customer pay?
+Why did they buy now?
+What did they use before?
+What is the hardest technical problem?
+What part is still manual?
+What changed in the product because of a user?
+What is retention supposed to look like?
+How do you acquire the next 100 customers?
+What is the narrowest market you can dominate?
+What is the biggest reason this fails?
+What number improved this week?
+What will you build next and why?
+
+13. Competitive answer discipline
+Name competitors directly. Saying “we have no competitors” signals poor market understanding.
+Do not attack incumbents; explain the different job or system boundary.
+Do not claim a technical moat before you have one. Describe the data/ontology/workflow advantage you intend to compound.
+Recognize that Notion and other workspace vendors already have agents; “we have an agent” is not differentiation.
+Use customer evidence to prove the wedge rather than abstract feature comparisons.
+14. Weekly workback to submission
+Week
+Primary objective
+Outputs
+Week 1
+Problem proof
+10 interviews, 2 pilot asks, pilot offer, onboarding v1, landing page
+Week 2
+Paid proof
+First paid installation, case-study measurements, core artifact set frozen for test
+Week 3
+Repeatability
+Second/third pilot, Drive inventory prototype, gap-engine demo, metrics
+Week 4
+Recurring proof + application
+Guardian prototype, one recurring-price test, demo video, application draft, reference numbers checked
+Final days
+Polish facts only
+Re-verify counts/revenue, simplify answers, founder video, submit before deadline
+
+
+15. Application evidence room
+Folder / artifact
+Contents
+01 Application Answers
+Current exact answers and previous revisions
+02 Metrics
+Weekly customer, revenue, activation, automation, false-positive and cost data
+03 Customers
+Interview notes, pilot status, invoices, quotes, permissions for case studies
+04 Demo
+Demo tenant, script, screen recording, screenshots
+05 Product
+Architecture diagram, product backlog, current build links
+06 Research
+Competitor/RFS evidence; keep concise and separate from application answers
+07 Interview
+Rapid-fire questions, numerical answers, objection bank
+08 Company
+Cap table/incorporation/founder commitments if applicable
+09 Submission Snapshot
+Final submitted application, metrics as-of submission date, video file
+
+16. Application scorecard
+Dimension
+Red
+Yellow
+Green
+Problem
+Mostly theoretical
+Interviews confirm it
+Multiple customers urgently experience it
+Payment
+No ask
+Pilot interest
+Paid customer(s)
+Product
+Deck/mockup
+Working prototype
+Used on real workspace and creates result
+Focus
+Any startup/any stack
+ICP chosen
+One trigger+ICP+stack converting
+Repeatability
+Everything bespoke
+Some repeated core
+Same onboarding + high structural reuse
+Recurring value
+Setup only
+Guardian hypothesis
+Users rely on monitoring / renew
+Founder commitment
+Many parallel priorities
+Time allocated
+Clear commitment and execution cadence
+
+
+17. What not to do before applying
+Do not build Microsoft 365, Notion and Google connectors simultaneously.
+Do not create 70 perfect templates before selling the first pilot.
+Do not spend the month naming/rebranding the company.
+Do not claim global/industry universality in the v1 pitch.
+Do not fake traction using free friends-and-family “users.” Label pilots honestly.
+Do not hide manual operations; explain how they teach you what to automate.
+Do not claim compliance/certification outcomes the product cannot verify.
+Do not write application answers like a pitch deck. Use short, factual, numerical language.
+18. Founder focus decision
+The biggest application risk is not competition; it is looking unfocused. If you apply with Company OS, your public/application narrative should make it clear that this is the company you are actively testing and building now. Other ventures can remain context or prior experience, but should not make the reviewer wonder which company receives your attention.
+19. Submission readiness checklist
+Current YC deadline and batch details re-checked on the official application page.
+Company name/domain and founder details consistent across application, demo and website.
+All user, customer and revenue counts updated as of submission date.
+Pilots and paid customers distinguished accurately.
+One-line description passes the “stranger understands it in 10 seconds” test.
+Demo link works without special credentials or has clear access instructions.
+Founder video follows current YC instructions.
+Competitor section includes serious incumbents and why users choose this wedge.
+No unsupported TAM claims or fake precision.
+No claim that AI makes the company compliant.
+Every written answer has unnecessary adjectives removed.
+A copy of the final submitted application is saved for interview preparation.
+Sources & verification notes
+Use these sources for current facts; re-check before external publication or submission because YC programs, pricing, and product capabilities can change.
+YC Apply: https://www.ycombinator.com/apply — Official source for current application deadline, batch and submission requirements. Re-check immediately before submission.
+YC Requests for Startups: https://www.ycombinator.com/rfs — Current themes. Use as validation, not as the reason for starting the company.
+YC Startup School: https://www.ycombinator.com/startupschool — Official Startup School resources.
+YC Startup School videos: https://www.ycombinator.com/blog/startup-school-videos — Source for Startup School lectures including business models/pricing.
+YC Library — Do Things That Don’t Scale: https://www.ycombinator.com/library/96-do-things-that-don-t-scale — Supports concierge-first customer development.
+YC Companies — Operations: https://www.ycombinator.com/companies/industry/operations — Useful for understanding adjacent YC-funded operational software.
+Vanta: https://www.vanta.com — Compliance-automation competitor context.
+Notion: https://www.notion.com — Workspace/agent competitor context.

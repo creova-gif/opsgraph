@@ -1,0 +1,21 @@
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Node / Bun
+node_modules/
+bun.lockb
+
+# Local compilation outputs
+workspace_compiled/
+workspace_target/
+workspace_demo/
+tmp/
+*.log

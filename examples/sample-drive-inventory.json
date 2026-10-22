@@ -1,0 +1,185 @@
+{
+  "scan_metadata": {
+    "scanned_at": "2026-10-20T18:00:00Z",
+    "domain": "acmecloud.io",
+    "platform": "google_workspace",
+    "shared_drives": ["Engineering", "Operations", "Sales"],
+    "total_files": 15,
+    "total_folders": 6
+  },
+  "folders": [
+    { "id": "fld-root", "name": "Company Drive", "parent": null, "path": "/" },
+    { "id": "fld-eng", "name": "Engineering", "parent": "fld-root", "path": "/Engineering" },
+    { "id": "fld-ops", "name": "Operations", "parent": "fld-root", "path": "/Operations" },
+    { "id": "fld-sales", "name": "Sales", "parent": "fld-root", "path": "/Sales" },
+    { "id": "fld-hr", "name": "Team & Hiring", "parent": "fld-root", "path": "/Team & Hiring" },
+    { "id": "fld-random", "name": "Old Backups & Shared", "parent": "fld-root", "path": "/Old Backups & Shared" }
+  ],
+  "files": [
+    {
+      "id": "file-001",
+      "name": "Acme Cloud - Company Profile & Pitch 2026.gdoc",
+      "mime_type": "application/vnd.google-apps.document",
+      "parent_id": "fld-ops",
+      "path": "/Operations/Acme Cloud - Company Profile & Pitch 2026.gdoc",
+      "created_time": "2026-08-01T10:00:00Z",
+      "modified_time": "2026-09-15T12:00:00Z",
+      "owners": ["founder@acmecloud.io"],
+      "size_bytes": 14200
+    },
+    {
+      "id": "file-002",
+      "name": "Hiring Checklist v2.gdoc",
+      "mime_type": "application/vnd.google-apps.document",
+      "parent_id": "fld-hr",
+      "path": "/Team & Hiring/Hiring Checklist v2.gdoc",
+      "created_time": "2026-06-10T14:00:00Z",
+      "modified_time": "2026-09-20T11:00:00Z",
+      "owners": ["coo@acmecloud.io"],
+      "size_bytes": 8900
+    },
+    {
+      "id": "file-003",
+      "name": "Onboarding Checklist - Engineering & Ops.gsheet",
+      "mime_type": "application/vnd.google-apps.spreadsheet",
+      "parent_id": "fld-hr",
+      "path": "/Team & Hiring/Onboarding Checklist - Engineering & Ops.gsheet",
+      "created_time": "2026-05-12T09:30:00Z",
+      "modified_time": "2026-10-01T16:45:00Z",
+      "owners": ["coo@acmecloud.io"],
+      "size_bytes": 22100
+    },
+    {
+      "id": "file-004",
+      "name": "Employee Offboarding Checklist.gdoc",
+      "mime_type": "application/vnd.google-apps.document",
+      "parent_id": "fld-hr",
+      "path": "/Team & Hiring/Employee Offboarding Checklist.gdoc",
+      "created_time": "2025-02-14T11:00:00Z",
+      "modified_time": "2025-03-01T10:00:00Z",
+      "owners": ["coo@acmecloud.io"],
+      "size_bytes": 7400
+    },
+    {
+      "id": "file-005",
+      "name": "Weekly Leadership Agenda & Sync Notes.gdoc",
+      "mime_type": "application/vnd.google-apps.document",
+      "parent_id": "fld-ops",
+      "path": "/Operations/Weekly Leadership Agenda & Sync Notes.gdoc",
+      "created_time": "2026-01-05T08:00:00Z",
+      "modified_time": "2026-10-18T09:15:00Z",
+      "owners": ["founder@acmecloud.io"],
+      "size_bytes": 45000
+    },
+    {
+      "id": "file-006",
+      "name": "Architecture Decision Record Template (ADR).gdoc",
+      "mime_type": "application/vnd.google-apps.document",
+      "parent_id": "fld-eng",
+      "path": "/Engineering/Architecture Decision Record Template (ADR).gdoc",
+      "created_time": "2026-07-20T15:00:00Z",
+      "modified_time": "2026-08-10T14:30:00Z",
+      "owners": ["cto@acmecloud.io"],
+      "size_bytes": 11200
+    },
+    {
+      "id": "file-007",
+      "name": "Incident Record Template.gdoc",
+      "mime_type": "application/vnd.google-apps.document",
+      "parent_id": "fld-eng",
+      "path": "/Engineering/Incident Record Template.gdoc",
+      "created_time": "2026-04-10T12:00:00Z",
+      "modified_time": "2026-09-02T13:00:00Z",
+      "owners": ["cto@acmecloud.io"],
+      "size_bytes": 9800
+    },
+    {
+      "id": "file-008",
+      "name": "Incident Postmortem Template - copy (1).docx",
+      "mime_type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      "parent_id": "fld-random",
+      "path": "/Old Backups & Shared/Incident Postmortem Template - copy (1).docx",
+      "created_time": "2025-11-10T12:00:00Z",
+      "modified_time": "2025-11-10T12:00:00Z",
+      "owners": ["former_contractor@acmecloud.io"],
+      "size_bytes": 15400
+    },
+    {
+      "id": "file-009",
+      "name": "Vendor Register & Software Subscriptions 2024.xlsx",
+      "mime_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "parent_id": "fld-random",
+      "path": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx",
+      "created_time": "2024-04-01T10:00:00Z",
+      "modified_time": "2024-05-15T16:00:00Z",
+      "owners": ["founder@acmecloud.io"],
+      "size_bytes": 35000
+    },
+    {
+      "id": "file-010",
+      "name": "Investor Update Template.gdoc",
+      "mime_type": "application/vnd.google-apps.document",
+      "parent_id": "fld-ops",
+      "path": "/Operations/Investor Update Template.gdoc",
+      "created_time": "2026-02-01T10:00:00Z",
+      "modified_time": "2026-09-01T10:00:00Z",
+      "owners": ["founder@acmecloud.io"],
+      "size_bytes": 8300
+    },
+    {
+      "id": "file-011",
+      "name": "SOP - Customer Onboarding Procedure.gdoc",
+      "mime_type": "application/vnd.google-apps.document",
+      "parent_id": "fld-ops",
+      "path": "/Operations/SOP - Customer Onboarding Procedure.gdoc",
+      "created_time": "2026-03-12T14:00:00Z",
+      "modified_time": "2026-06-20T17:00:00Z",
+      "owners": ["coo@acmecloud.io"],
+      "size_bytes": 16500
+    },
+    {
+      "id": "file-012",
+      "name": "Customer Security FAQ & CAIQ Answers.gsheet",
+      "mime_type": "application/vnd.google-apps.spreadsheet",
+      "parent_id": "fld-sales",
+      "path": "/Sales/Customer Security FAQ & CAIQ Answers.gsheet",
+      "created_time": "2026-08-15T10:00:00Z",
+      "modified_time": "2026-10-15T18:00:00Z",
+      "owners": ["headofsales@acmecloud.io"],
+      "size_bytes": 52000
+    },
+    {
+      "id": "file-013",
+      "name": "Standard Production Change Record.gdoc",
+      "mime_type": "application/vnd.google-apps.document",
+      "parent_id": "fld-eng",
+      "path": "/Engineering/Standard Production Change Record.gdoc",
+      "created_time": "2026-05-01T11:00:00Z",
+      "modified_time": "2026-07-15T12:00:00Z",
+      "owners": ["cto@acmecloud.io"],
+      "size_bytes": 7100
+    },
+    {
+      "id": "file-014",
+      "name": "Role Charter Template.gdoc",
+      "mime_type": "application/vnd.google-apps.document",
+      "parent_id": "fld-hr",
+      "path": "/Team & Hiring/Role Charter Template.gdoc",
+      "created_time": "2026-01-10T12:00:00Z",
+      "modified_time": "2026-01-15T14:00:00Z",
+      "owners": ["coo@acmecloud.io"],
+      "size_bytes": 6200
+    },
+    {
+      "id": "file-015",
+      "name": "Procurement Checklist.gdoc",
+      "mime_type": "application/vnd.google-apps.document",
+      "parent_id": "fld-ops",
+      "path": "/Operations/Procurement Checklist.gdoc",
+      "created_time": "2026-02-10T11:00:00Z",
+      "modified_time": "2026-04-12T15:00:00Z",
+      "owners": ["coo@acmecloud.io"],
+      "size_bytes": 5800
+    }
+  ]
+}

@@ -1,0 +1,542 @@
+VENTURE BUILD SYSTEM
+Company OS — Venture Execution Blueprint
+From concierge proof to AI-native company infrastructure platform
+Founder working document • Version 1.0 • October 2026
+Core thesis
+Startups build products before they build the company infrastructure required to scale, sell to enterprises, raise capital, hire, and satisfy compliance demands. Company OS installs that missing infrastructure inside the workspace the company already uses, then continuously keeps it complete, current, owned, and auditable.
+
+Recommended v1
+Do not build “any industry, any stack, any geography” in v1. Start with 5–50 person B2B technology startups using Google Workspace, especially those approaching enterprise sales, fundraising, SOC 2 readiness, or rapid hiring. Build the architecture to expand later.
+
+Document control
+Value
+Purpose
+Single execution source of truth for building, validating, launching, and evolving Company OS.
+Founder decision
+Proceed as a concierge-first, Google-Workspace-first B2B SaaS venture.
+Primary customer
+Seed to Series A B2B technology startups, ~5–50 employees.
+First job to be done
+Turn an existing messy workspace into an investor-, enterprise-, hiring-, and compliance-ready operating system.
+Revenue model
+Paid implementation + recurring Company Guardian subscription; migrate toward software-heavy annual contracts as automation matures.
+90-day objective
+Prove paid demand, repeatability, measurable operational improvement, and a narrow product specification before platform expansion.
+
+
+1. Venture definition
+1.1 One-line definition
+Company OS turns a startup’s existing workspace into a complete, AI-maintained operating system.
+1.2 Customer promise
+Keep the tools the company already uses; Company OS installs structure rather than forcing a workspace migration.
+Know what operational artifacts should exist for the company’s stage, industry, geography, team, commercial situation, and target standards.
+Generate and organize missing company infrastructure with explicit human approval and provenance.
+Continuously detect missing, outdated, duplicated, ownerless, contradictory, or misplaced artifacts.
+Produce readiness views for fundraising, enterprise sales, onboarding, security/compliance, audits, and internal scaling.
+1.3 What Company OS is not
+Not a generic document generator or template marketplace.
+Not a replacement for Google Workspace, Microsoft 365, Notion, or SharePoint.
+Not a legal opinion, audit attestation, certification authority, or automated claim that a company is compliant.
+Not another private chatbot. The long-term product is shared company infrastructure used by founders, operators, functional leaders, and agents.
+Not an open-ended autonomous agent with unrestricted write access; risky actions remain approval-gated.
+2. Problem architecture
+Observed startup failure mode
+Business consequence
+Company OS response
+Documents scattered across personal/team drives
+Slow due diligence; institutional knowledge loss
+Canonical taxonomy, inventory, classification and ownership
+Policies copied from templates and forgotten
+False confidence; stale commitments
+Versioning, review cadence, evidence links and drift alerts
+No document numbering or register
+Duplicates, collisions, uncertainty about authoritative version
+Master register + canonical identifiers + lifecycle status
+Missing ownership and approvals
+Tasks fall between functions
+Owner/approver model and exception queue
+New hires create inconsistent artifacts
+Operational drift increases with headcount
+Guardrails, naming rules, filing automation and onboarding packs
+Compliance work begins only when a customer asks
+Deals slow down; emergency consulting spend
+Readiness overlays, evidence mapping and staged gap closure
+Investor data room assembled from scratch
+Founder time lost at fundraising moment
+Continuous investor-readiness pack and gap tracking
+
+
+3. Initial ICP and beachhead
+Dimension
+V1 choice
+Why
+Stage
+Seed to Series A
+Enough complexity and budget, but often no mature operations/GRC function.
+Size
+5–50 employees
+Organizational entropy has started but the buying process is still founder/COO-led.
+Business model
+B2B SaaS / AI / software-enabled services
+Enterprise buyers and investors impose recurring documentation pressure.
+Stack
+Google Workspace
+Strong API surface and fastest route to proving “work inside your existing workspace.”
+Trigger
+Enterprise customer, fundraise, SOC 2/security questionnaire, rapid hiring
+Urgency is stronger than abstract desire for cleanliness.
+Geography
+Start globally with English-language companies; sell where network access is strongest
+Avoid shrinking TAM while preserving later emerging-market localization.
+
+Beachhead positioning
+“Become enterprise- and investor-ready without rebuilding your company from scratch.” The pain trigger is readiness, not folder cleanliness.
+
+4. Jobs to be done
+Persona
+Critical job
+Evidence of success
+Founder/CEO
+Know what the company is missing before an investor/customer exposes it
+Critical gaps visible, prioritized and closing
+COO / BizOps
+Create repeatable operating infrastructure without months of consulting
+Core workflows, registers, policies, meetings and ownership installed
+CTO / Security lead
+Prepare for enterprise security reviews and future frameworks
+Security artifacts, owners and evidence map exist and stay current
+People lead
+Standardize hiring, onboarding, offboarding and employee records
+Consistent checklists, ownership and document lifecycle
+Investor / Board
+Receive consistent, structured updates and evidence
+Investor pack generated from current company state
+
+
+5. Product system
+5.1 Product modules
+Module
+Purpose
+V1 status
+Company Profiler
+Collect stage, industry, jurisdictions, customers, team, tools, claims and target frameworks
+Build now
+Workspace Inventory
+Read metadata and content needed to understand current company state
+Build now
+Operating Graph
+Machine-readable model of required company entities and dependencies
+Build thin v1
+Gap Engine
+Compare required state with observed state
+Build now
+Workspace Compiler
+Create approved folders, registers and artifacts
+Build now
+Document Control
+Identifiers, owners, approvals, versions, review dates, source/provenance
+Build now
+Company Guardian
+Incremental monitoring, drift detection, weekly exception report
+Build thin v1
+Readiness Views
+Fundraising, enterprise, security/compliance, hiring
+Build two trigger views first
+Industry Packs
+Vertical-specific rules and templates
+After repeatability proof
+Connector Abstraction
+Platform-neutral actions mapped to each workspace
+Design now; implement Google first
+Multi-player Agent UI
+Shared agent state and approvals across a team
+Later
+
+5.2 Company Operating Graph
+The strategic core should be a graph/ontology, not a folder tree. The folder tree is merely one compiled representation of the graph.
+Entity
+Representative relationships
+Company
+has stage, jurisdictions, products, customers, standards, risks
+Department
+owns processes, documents, KPIs and controls
+Person/Role
+owns or approves artifacts; performs processes
+Process
+requires inputs; creates evidence; is governed by policy
+Policy
+maps to owners, controls, standards and review dates
+Document
+has identifier, version, owner, status, source and dependencies
+Control
+requires evidence and testing; maps to frameworks
+Evidence
+supports controls, transactions, decisions and claims
+Risk
+maps to owners, mitigations, incidents and controls
+Decision
+has context, owner, date, rationale and follow-up
+
+
+6. Information architecture and taxonomy
+00 Company Control: company profile, master register, document-control standard, ownership matrix, annual plan.
+01 Governance & Leadership: board, decisions, meetings, objectives, risk, business continuity.
+02 Finance & Corporate: budgeting, banking, tax, procurement, vendors, cap table, investor reporting.
+03 People: hiring, onboarding, employee lifecycle, policies, training, offboarding.
+04 Product: discovery, roadmap, PRDs, customer feedback, releases.
+05 Engineering & Security: architecture, SDLC, access, incidents, changes, vendors, security.
+06 Sales & Customers: CRM exports/records, contracts, proposals, enterprise due diligence.
+07 Marketing & Brand: brand system, campaigns, content, research.
+08 Operations: SOPs, service delivery, quality, facilities/logistics if relevant.
+09 Legal / Privacy / Compliance: legal agreements, privacy, standards, framework mapping, evidence.
+10 Data & AI: data governance, model governance, evaluation, AI risks where relevant.
+99 Archive: immutable superseded/closed records under retention rules.
+Design rule
+The universal taxonomy is a starting schema, not a legal truth. Compile it using Core OS + Stage Pack + Industry Pack + Jurisdiction Pack + Framework Pack, and show which rule introduced each artifact.
+
+
+7. V1 onboarding specification
+Question group
+Minimum data
+Company
+Legal/trading name, website, incorporation jurisdiction, operating countries
+Stage
+Founded date, funding stage, current raise, employee count, contractor count
+Business
+B2B/B2C, sector, product/service description, customer type, regulated activities
+Workspace
+Google Workspace domain, shared drives, key folders, access boundaries
+Functions
+Departments/functions that exist today, named owners, outsourced functions
+Commercial triggers
+Enterprise sales, data room, hiring, certification, audit, customer questionnaires
+Standards
+Standards/certifications claimed, held, targeted or contractually required
+Geography
+Customer geographies, employee geographies, data residency concerns
+Brand
+Logo, colors, typography, voice; brand kit file if available
+Risk controls
+What Company OS may read, propose, create, move, rename or never modify without approval
+
+8. Core artifact library
+Pack
+Representative v1 artifacts
+Company control
+Master document register; document-control procedure; ownership/RACI matrix; company profile; policy register
+Governance
+Decision record; risk register; weekly leadership agenda; monthly operating review; annual objectives
+People
+Hiring checklist; onboarding checklist; offboarding checklist; role charter; training register
+Security/tech
+Access register; incident record; change record; vendor register; architecture decision record; security review calendar
+Finance/ops
+Procurement checklist; vendor review; budget tracker schema; approval matrix; business continuity plan template
+Fundraising
+Investor update; data-room index; due-diligence request register; fundraising readiness checklist
+Enterprise readiness
+Customer security request tracker; evidence index; policy/evidence gap report; contract obligations register
+
+
+9. Guardian operating loop
+Observe only authorized workspace changes using event/change mechanisms where possible.
+Classify the changed artifact using deterministic rules first and model reasoning only when needed.
+Compare metadata/content against canonical taxonomy, ownership, review cadence and dependency rules.
+Create an exception rather than making a risky change when confidence or authorization is insufficient.
+Auto-execute only reversible, low-risk operations explicitly approved during setup.
+Produce a weekly “Company Health” brief: new risks, stale artifacts, missing evidence, unowned items, duplicates and recommended actions.
+Record every agent action in an immutable activity trail suitable for audit and debugging.
+10. Trust, safety and permissions
+Action class
+Default behavior
+Read metadata
+Allowed after workspace admin consent and scope selection
+Read document content
+Only within approved roots / shared drives
+Create new folders/templates
+Approval during initial compilation; later constrained to defined roots
+Move/rename existing files
+Proposal first; human approval by default in v1
+Delete
+Never in v1; archive proposal only
+Assert compliance/legal status
+Never; report internal readiness and evidence gaps only
+Generate regulated/legal policy language
+Clearly AI-assisted draft + source/rule provenance + required human approver
+External sharing / permission changes
+Never autonomously in v1
+
+
+11. Technical architecture
+Layer
+Recommended responsibility
+Identity / tenant
+OAuth, tenant isolation, RBAC, consent, audit log
+Connector
+Google Drive/Docs metadata and content adapters; normalized internal actions
+Inventory/index
+Workspace metadata, content fingerprints, canonical IDs, change cursor
+Operating Graph
+Company state, required state, rules, dependencies, provenance
+Rules engine
+Deterministic stage/industry/jurisdiction/framework compilation
+AI reasoning
+Classification ambiguity, mapping, synthesis, gap explanation, draft generation
+Workflow engine
+Long-running scans, approvals, retries, event handling, scheduled audits
+Artifact generator
+DOC/Sheet templates, brand tokens, identifiers, placeholders, provenance
+Guardian
+Change intake, drift policies, health score, alert generation
+Observability
+Agent action logs, API cost, model cost, latency, failure/retry metrics
+
+Cost rule
+Do not repeatedly rescan entire workspaces with LLMs. Build incremental change processing, hashes/fingerprints, deterministic checks, cached classification, and exception-based reasoning. AI should be applied where judgment creates value.
+
+
+12. Business model and pricing experiments
+Offer
+Hypothesis
+What to learn
+Founding Pilot
+$750–$1,500 one-time implementation + optional $99–$199/mo Guardian
+Will founders pay before full automation?
+Growth
+$2,500–$5,000 implementation + $249–$499/mo
+Does readiness value support meaningful ACV?
+Enterprise/Regulated
+$5,000–$15,000 implementation + $750–$2,000/mo
+Can vertical/framework overlays command a premium without becoming consulting-heavy?
+Accelerator Cohort
+Cohort implementation fee + per-company maintenance
+Can channel distribution reduce CAC and create trust?
+
+Do not lock final pricing before pilots. Track delivery hours, model/API cost, customer urgency, usage, willingness to renew, and value of avoided consulting or deal delay.
+13. Go-to-market
+Channel
+V1 motion
+Asset
+Founder network
+Direct founder outreach around a trigger
+48-hour Company OS Assessment
+Accelerators/incubators
+Portfolio/cohort installation
+Cohort readiness report + founder dashboard
+VC portfolio teams
+Operational infrastructure for seed portfolio
+Portfolio health / readiness package
+Startup lawyers/accountants
+Referral when companies formalize
+Partner checklist and co-branded audit
+Security/compliance consultants
+Upstream company infrastructure before certification
+Evidence-ready handoff
+Content
+Before/after teardown of startup operating mess
+Screenshots, anonymized case studies, benchmark reports
+
+
+14. Competitive strategy
+Category
+Examples
+Do not compete on
+Company OS wedge
+Compliance automation
+Vanta, Drata, Secureframe
+Framework evidence automation alone
+Broader operating state + readiness triggers + workspace compilation
+Workspaces
+Notion, Microsoft 365, Google Workspace
+Editor/collaboration breadth
+Intelligence layer above/inside existing workspace
+Knowledge management
+Slite, Notion
+Wiki/search alone
+Required-state model + lifecycle governance + drift
+Templates
+Notion/Coda ecosystems
+Number of templates
+Contextual compilation + ongoing maintenance
+Fractional operations
+COOs/consultants
+High-touch judgment
+Encode repeated operational judgment into software while retaining expert escalation
+
+Moat target
+The moat is not the agent. Build proprietary operational ontology, required-state rules, dependency graphs, anonymized benchmark intelligence, trusted connector execution, and a growing corpus of how companies move from messy state to institution-ready state.
+
+
+15. Validation plan before platform build
+Experiment
+Execution
+Pass signal
+Fail / pivot signal
+Paid concierge pilots
+Sell 5 implementations using the same onboarding and delivery system
+≥3 pay; delivery repeats; founders ask to keep Guardian
+Praise but no payment; every build is bespoke
+Blind repeatability test
+Run same onboarding across SaaS, healthtech, logistics
+≥70% structural reuse or clear modular pack boundaries
+<50% reusable and no stable core emerges
+Channel pilot
+Pitch one accelerator/VC to sponsor a cohort
+They pay or introduce a live cohort for pilot
+They see it as non-essential admin
+Maintenance demand
+After installation, charge for weekly Guardian
+At least half want recurring monitoring
+Value ends when setup is finished
+
+16. Pilot delivery SOP
+Pre-qualify: company has a real trigger and founder/operations owner will participate.
+Collect payment before full build; discounts are allowed but free pilots do not validate willingness to pay.
+Run structured onboarding; record every question the founder cannot answer.
+Inventory workspace; do not modify originals during audit.
+Create required-state map and explicit assumptions.
+Present proposed taxonomy, artifact set and risky changes for approval.
+Compile the OS, keeping missing factual content as clearly marked founder input—not invented assertions.
+Run QA: duplicates, broken links, owners, numbering, dates, permissions and brand rendering.
+Deliver before/after score and exception backlog.
+Run Guardian weekly for four weeks and record every alert and false positive.
+Conduct a 30-minute founder interview at day 1, day 14 and day 30.
+Convert repeated judgment calls into rules, schemas, tests or product backlog items.
+
+17. Metrics
+Metric class
+Metric
+Why it matters
+Demand
+Paid pilots / qualified conversations
+Tests urgency and WTP
+Activation
+Time from connection to first useful gap report
+Core product speed
+Automation
+% pilot work completed by repeatable software/rules
+Determines SaaS viability
+Quality
+False-positive gap rate; founder correction rate
+Trust
+Value
+Hours saved; critical gaps found; deal/audit blockers prevented
+Outcome proof
+Retention
+Guardian renewal; weekly active stakeholders
+Recurring value
+Economics
+Human delivery hours; compute/API cost; gross margin
+Business viability
+Expansion
+Additional readiness pack / department adoption
+Platform potential
+
+18. 90-day execution roadmap
+Window
+Founder objective
+Deliverables
+Days 1–14
+Sell and observe
+Landing page, one-liner, onboarding v1, Google audit script/manual workflow, first 5 interviews, first 1–2 paid pilots
+Days 15–30
+Repeat
+3–5 paid pilots, standardized 25–35 artifact core, before/after metrics, weekly Guardian prototype, YC demo
+Days 31–60
+Productize the repeated 80%
+OAuth/tenant shell, inventory/index, graph schema, gap engine, approval queue, artifact compiler, audit log
+Days 61–90
+Prove recurring value
+Guardian events, health report, renewal tests, second acquisition channel, first case study, pricing iteration
+
+19. Founder weekly operating cadence
+Day
+Primary work
+Monday
+Customer interviews + pipeline + weekly product assumptions
+Tuesday
+Pilot delivery / observe manual decisions
+Wednesday
+Code repeated workflow; write tests and rules
+Thursday
+Pilot delivery + sales + partner conversations
+Friday
+Metrics, false positives, costs, roadmap pruning, publish one insight/demo
+Weekend block
+Deep product architecture only if it directly removes a repeated pilot bottleneck
+
+
+20. Decision gates
+Gate
+Continue SaaS if…
+Otherwise…
+After 5 pilots
+≥3 paid; core structure repeats; clear urgent trigger
+Stay productized service or change wedge
+After 10 pilots
+≥50% delivery effort automated or obviously automatable
+Do not scale acquisition yet
+After 3 months Guardian
+Customers renew and alerts change behavior
+Setup-only business; rethink recurring product
+Before 2nd connector
+Google ICP is working and connector abstraction is stable
+Do not add Microsoft/Notion for vanity
+Before regulated vertical
+General OS trusted; professional review pathway exists
+Avoid liability-heavy vertical expansion
+
+21. Immediate founder backlog
+Priority
+Action
+Definition of done
+P0
+Choose working name and domain
+Usable temporary brand; does not delay pilots
+P0
+Create one-page pilot offer
+Problem, trigger, deliverables, price, CTA
+P0
+Build onboarding questionnaire
+Can qualify and profile a startup in ≤20 minutes
+P0
+Define core required-state schema
+Version-controlled JSON/YAML/schema or database model
+P0
+Define 25–35 core artifacts
+Each has purpose, owner, lifecycle, source rule and placeholder policy
+P0
+Recruit first five founders
+Scheduled interviews; at least two pilot asks
+P1
+Build Drive inventory prototype
+Lists authorized files/folders with metadata and change-safe IDs
+P1
+Build gap report prototype
+Produces explainable required-vs-observed findings
+P1
+Build case-study measurement template
+Before/after metrics standardized
+P2
+Build Guardian weekly report
+Runs on incremental changes and queues exceptions
+
+22. Product principles
+Specific before broad: dominate one trigger, one ICP and one connector before expanding.
+Evidence before assertion: the system must know what it observed, inferred, generated and still needs a human to confirm.
+Propose before destructive action: trust is more important than autonomy.
+Compile, do not dump templates: every artifact must exist for a reason derived from company context.
+Operational graph over folder tree: workspaces are projections of a deeper company model.
+Human judgment becomes product specification: every repeated decision from pilots should become a rule, test, schema or explicit escalation.
+Sell outcomes: enterprise readiness, investor readiness, faster onboarding, audit preparedness—not cleanliness.
+Sources & verification notes
+Use these sources for current facts; re-check before external publication or submission because YC programs, pricing, and product capabilities can change.
+YC Requests for Startups: https://www.ycombinator.com/rfs — Current RFS themes used to contextualize AI-native compliance, agentic workflows and new operating systems.
+YC Apply: https://www.ycombinator.com/apply — Current batch/application details should be re-checked before submission.
+YC Library — Do Things That Don’t Scale: https://www.ycombinator.com/library/96-do-things-that-don-t-scale — Basis for concierge-first validation approach.
+Google Drive API limits: https://developers.google.com/workspace/drive/api/guides/limits — Reference for connector and quota architecture.
+Microsoft Graph throttling: https://learn.microsoft.com/en-us/graph/throttling-limits — Reference for later Microsoft connector complexity.
+Notion pricing/product: https://www.notion.com/pricing — Reference for workspace/AI competitive context.
+Vanta: https://www.vanta.com — Compliance automation competitive reference.
+Drata: https://drata.com — Compliance automation competitive reference.
+Secureframe: https://secureframe.com — Compliance automation competitive reference.

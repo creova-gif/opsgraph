@@ -1,0 +1,55 @@
+{
+  "company": {
+    "legal_name": "Acme Cloud Technologies, Inc.",
+    "trading_name": "Acme Cloud",
+    "website": "https://acmecloud.io",
+    "incorporation_jurisdiction": "Delaware, USA",
+    "operating_countries": ["United States", "Canada"]
+  },
+  "stage": {
+    "founded_date": "2024-03-15",
+    "funding_stage": "seed",
+    "currently_raising": false,
+    "employee_count": 14,
+    "contractor_count": 3
+  },
+  "business": {
+    "model": "b2b_saas",
+    "sector": "Infrastructure Software",
+    "description": "Developer platform for distributed event processing.",
+    "customer_type": "enterprise",
+    "regulated_activities": []
+  },
+  "workspace": {
+    "platform": "google_workspace",
+    "domain": "acmecloud.io",
+    "shared_drives": ["Engineering", "Operations", "Sales"],
+    "key_folders": ["00_Company", "01_Product"]
+  },
+  "functions": [
+    { "name": "Engineering", "status": "in_house", "owner": "CTO" },
+    { "name": "Sales", "status": "in_house", "owner": "Head of Sales" },
+    { "name": "Operations", "status": "in_house", "owner": "COO" },
+    { "name": "Legal", "status": "outsourced", "owner": "External Counsel" },
+    { "name": "Finance", "status": "outsourced", "owner": "Fractional CFO" }
+  ],
+  "triggers": [
+    "enterprise_sales",
+    "security_questionnaires",
+    "soc2_iso"
+  ],
+  "standards": [
+    { "name": "SOC 2 Type II", "status": "targeted" }
+  ],
+  "brand": {
+    "colors": ["#0F172A", "#3B82F6"],
+    "typography": "Inter",
+    "voice": "Direct, technical, professional"
+  },
+  "permissions": {
+    "read_metadata": true,
+    "read_content_roots": ["Operations", "Sales"],
+    "create_roots": ["Company OS"],
+    "move_rename": "propose_only"
+  }
+}

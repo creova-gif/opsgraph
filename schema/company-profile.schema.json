@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "company-os/company-profile/v0.1",
+  "title": "Company Profile (onboarding output)",
+  "description": "Facts that determine which operating-system artifacts a company requires. Every answer is versioned and carries provenance.",
+  "type": "object",
+  "required": ["company", "stage", "business", "workspace", "triggers", "permissions"],
+  "properties": {
+    "company": {
+      "type": "object",
+      "required": ["legal_name", "website", "incorporation_jurisdiction", "operating_countries"],
+      "properties": {
+        "legal_name": { "type": "string" },
+        "trading_name": { "type": "string" },
+        "website": { "type": "string", "format": "uri" },
+        "incorporation_jurisdiction": { "type": "string" },
+        "operating_countries": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "required": ["funding_stage", "employee_count"],
+      "properties": {
+        "founded_date": { "type": "string", "format": "date" },
+        "funding_stage": { "enum": ["idea", "pre_seed", "seed", "series_a", "series_b_plus", "bootstrapped"] },
+        "currently_raising": { "type": "boolean" },
+        "employee_count": { "type": "integer", "minimum": 1 },
+        "contractor_count": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "business": {
+      "type": "object",
+      "required": ["model", "sector", "description", "customer_type"],
+      "properties": {
+        "model": { "enum": ["b2b_saas", "ai_software", "software_enabled_services", "b2c", "marketplace", "ecommerce", "professional_services", "other"] },
+        "sector": { "type": "string" },
+        "description": { "type": "string" },
+        "customer_type": { "enum": ["enterprise", "mid_market", "smb", "consumer", "government", "mixed"] },
+        "regulated_activities": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "workspace": {
+      "type": "object",
+      "required": ["platform", "domain"],
+      "properties": {
+        "platform": { "enum": ["google_workspace", "microsoft_365", "notion", "other"] },
+        "domain": { "type": "string" },
+        "shared_drives": { "type": "array", "items": { "type": "string" } },
+        "key_folders": { "type": "array", "items": { "type": "string" } },
+        "access_boundaries": { "type": "string" }
+      }
+    },
+    "functions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "status": { "enum": ["in_house", "outsourced", "none"] },
+          "owner": { "type": "string" }
+        }
+      }
+    },
+    "triggers": {
+      "type": "array",
+      "description": "Commercial pressures that make readiness urgent. Product is sold against these, not against cleanliness.",
+      "items": { "enum": ["enterprise_sales", "fundraise_data_room", "security_questionnaires", "soc2_iso", "audit", "rapid_hiring", "international_expansion", "leadership_handoff"] },
+      "minItems": 1
+    },
+    "standards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "status": { "enum": ["claimed", "held", "targeted", "contractually_required"] }
+        }
+      }
+    },
+    "brand": {
+      "type": "object",
+      "properties": {
+        "logo_ref": { "type": "string" },
+        "colors": { "type": "array", "items": { "type": "string" } },
+        "typography": { "type": "string" },
+        "voice": { "type": "string" },
+        "brand_kit_ref": { "type": "string" }
+      }
+    },
+    "permissions": {
+      "type": "object",
+      "description": "Maps to action classes in the blueprint trust model. Defaults are the safest setting.",
+      "required": ["read_metadata", "read_content_roots"],
+      "properties": {
+        "read_metadata": { "type": "boolean", "default": true },
+        "read_content_roots": { "type": "array", "items": { "type": "string" } },
+        "create_roots": { "type": "array", "items": { "type": "string" } },
+        "move_rename": { "const": "propose_only", "default": "propose_only" },
+        "delete": { "const": "never", "default": "never" },
+        "external_sharing_or_permission_changes": { "const": "never", "default": "never" },
+        "auto_execute_allowed": { "type": "array", "items": { "type": "string" }, "description": "Explicit reversible low-risk operation ids approved at setup." }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "properties": {
+        "collected_at": { "type": "string", "format": "date-time" },
+        "collected_by": { "type": "string" },
+        "unanswered": { "type": "array", "items": { "type": "string" }, "description": "Questions the founder could not answer; each becomes product learning." }
+      }
+    }
+  }
+}

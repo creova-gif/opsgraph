@@ -1,0 +1,13 @@
+{
+  "name": "company-os",
+  "version": "0.1.0",
+  "description": "Turns a startup's existing Google Workspace into an AI-maintained company operating system.",
+  "scripts": {
+    "resolve": "python3 resolver/resolver.py",
+    "inventory": "python3 inventory/scanner.py",
+    "gap": "python3 gap_engine/analyzer.py",
+    "compile": "python3 compiler/compiler.py",
+    "guardian": "python3 guardian/guardian.py",
+    "test": "python3 -m unittest discover -s . -p 'test_*.py'"
+  }
+}

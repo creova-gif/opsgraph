@@ -1,0 +1,40 @@
+{
+  "company": {
+    "legal_name": "Novu Labs Inc.",
+    "trading_name": "Novu",
+    "website": "https://novulabs.ai",
+    "incorporation_jurisdiction": "Delaware, USA",
+    "operating_countries": ["United States"]
+  },
+  "stage": {
+    "founded_date": "2026-01-10",
+    "funding_stage": "pre_seed",
+    "currently_raising": true,
+    "employee_count": 3,
+    "contractor_count": 1
+  },
+  "business": {
+    "model": "ai_software",
+    "sector": "Developer Tools",
+    "description": "Autonomous code review assistant for TypeScript teams.",
+    "customer_type": "smb",
+    "regulated_activities": []
+  },
+  "workspace": {
+    "platform": "google_workspace",
+    "domain": "novulabs.ai"
+  },
+  "functions": [
+    { "name": "Engineering", "status": "in_house", "owner": "Co-founder" },
+    { "name": "Product", "status": "in_house", "owner": "CEO" }
+  ],
+  "triggers": [
+    "fundraise_data_room"
+  ],
+  "standards": [],
+  "permissions": {
+    "read_metadata": true,
+    "read_content_roots": ["Company"],
+    "move_rename": "propose_only"
+  }
+}

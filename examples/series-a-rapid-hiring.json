@@ -1,0 +1,48 @@
+{
+  "company": {
+    "legal_name": "Helios Health Systems, Inc.",
+    "trading_name": "Helios",
+    "website": "https://helioshealth.com",
+    "incorporation_jurisdiction": "Delaware, USA",
+    "operating_countries": ["United States", "United Kingdom"]
+  },
+  "stage": {
+    "founded_date": "2023-08-01",
+    "funding_stage": "series_a",
+    "currently_raising": false,
+    "employee_count": 38,
+    "contractor_count": 12
+  },
+  "business": {
+    "model": "b2b_saas",
+    "sector": "Digital Health / Clinical Operations",
+    "description": "Provider workflow orchestration platform.",
+    "customer_type": "enterprise",
+    "regulated_activities": ["phi_handling"]
+  },
+  "workspace": {
+    "platform": "google_workspace",
+    "domain": "helioshealth.com"
+  },
+  "functions": [
+    { "name": "Engineering", "status": "in_house", "owner": "VP Engineering" },
+    { "name": "Operations", "status": "in_house", "owner": "COO" },
+    { "name": "People", "status": "in_house", "owner": "Head of People" },
+    { "name": "Security", "status": "in_house", "owner": "CISO" }
+  ],
+  "triggers": [
+    "enterprise_sales",
+    "rapid_hiring",
+    "soc2_iso",
+    "international_expansion"
+  ],
+  "standards": [
+    { "name": "SOC 2 Type II", "status": "held" },
+    { "name": "HIPAA", "status": "claimed" }
+  ],
+  "permissions": {
+    "read_metadata": true,
+    "read_content_roots": ["Operations", "Compliance"],
+    "move_rename": "propose_only"
+  }
+}
