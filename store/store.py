@@ -204,6 +204,22 @@ class ProfileStore:
             for r in rows
         ]
 
+    def latest_runs_by_type(self, company_id: str) -> Dict[str, Dict[str, Any]]:
+        """Newest run per run_type for a company, keyed by run_type.
+        Same row shape as list_runs; MAX(id) picks the newest since id
+        tracks insertion order (same convention as the approvals ledger)."""
+        rows = self.conn.execute(
+            "SELECT id, company_id, run_type, summary, created_at FROM runs r "
+            "WHERE company_id = ? AND id = ("
+            "SELECT MAX(id) FROM runs "
+            "WHERE company_id = r.company_id AND run_type = r.run_type)",
+            (company_id,),
+        ).fetchall()
+        return {
+            r[2]: {"id": r[0], "company_id": r[1], "run_type": r[2], "summary": r[3], "created_at": r[4]}
+            for r in rows
+        }
+
     def get_run(self, run_id: int) -> Optional[Dict[str, Any]]:
         row = self.conn.execute(
             "SELECT id, company_id, run_type, summary, payload, created_at FROM runs WHERE id = ?",

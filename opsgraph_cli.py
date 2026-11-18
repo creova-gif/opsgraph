@@ -14,6 +14,7 @@ import os
 import sys
 import webbrowser
 from dataclasses import asdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 # Ensure project root is in sys.path
@@ -419,6 +420,53 @@ def cmd_history(args):
         store.close()
 
 
+STAGE_ORDER = ("scan", "resolve", "gap", "compile", "guardian")
+
+
+def _age(iso_timestamp: str) -> str:
+    """Human age of an ISO timestamp relative to now (UTC)."""
+    ts = datetime.fromisoformat(iso_timestamp.replace("Z", "+00:00"))
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=timezone.utc)
+    seconds = max(0, int((datetime.now(timezone.utc) - ts).total_seconds()))
+    if seconds < 60:
+        return f"{seconds}s"
+    if seconds < 3600:
+        return f"{seconds // 60}m"
+    if seconds < 86400:
+        return f"{seconds // 3600}h"
+    days = seconds // 86400
+    if days < 30:
+        return f"{days}d"
+    return f"{days // 30}mo"
+
+
+def cmd_status(args):
+    db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
+    store = ProfileStore(db_path)
+    try:
+        if store.get_profile(args.company_id) is None:
+            sys.stderr.write(f"Error: no company '{args.company_id}' in {db_path}\n")
+            sys.exit(1)
+        info = next((c for c in store.list_companies() if c["company_id"] == args.company_id), {})
+        print(f"{info.get('legal_name', '')} ({args.company_id}) — profile v{info.get('latest_version', '?')}")
+        latest = store.latest_runs_by_type(args.company_id)
+        for stage in STAGE_ORDER:
+            run = latest.get(stage)
+            if run is None:
+                print(f"  {stage:<8} : never run")
+            else:
+                print(f"  {stage:<8} : {_age(run['created_at'])} ago — {run['summary']}")
+        approved = store.approved_artifact_ids(args.company_id)
+        decision_count = len(store.list_decisions(args.company_id, limit=10000))
+        if "*" in approved:
+            print(f"Approvals: all (*)  ({decision_count} decisions)")
+        else:
+            print(f"Approvals: {len(approved)} effective  ({decision_count} decisions)")
+    finally:
+        store.close()
+
+
 def cmd_dashboard(args):
     profile_path = Path(args.profile)
     with open(profile_path, "r", encoding="utf-8") as f:
@@ -550,6 +598,12 @@ def main():
     p_hist.add_argument("--limit", type=int, default=20)
     p_hist.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_hist.set_defaults(func=cmd_history)
+
+    # status
+    p_status = subparsers.add_parser("status", help="Read-only summary of the loop state for one company")
+    p_status.add_argument("company_id", help="Company ID (domain slug)")
+    p_status.add_argument("--db", default=None, help=f"SQLite DB path (default: {DEFAULT_DB_PATH})")
+    p_status.set_defaults(func=cmd_status)
 
     # dashboard
     p_dash = subparsers.add_parser("dashboard", help="Generate single-file interactive HTML readiness dashboard")

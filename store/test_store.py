@@ -101,6 +101,20 @@ class TestRunHistory(unittest.TestCase):
         self.assertEqual(run["payload"]["score"], 29.9)
         self.assertIsNone(self.store.get_run(999))
 
+    def test_latest_runs_by_type(self):
+        self.store.save_run(self.cid, "gap", {"score": 20}, "score=20%")
+        self.store.save_run(self.cid, "scan", {"files": 10}, "files=10")
+        gap2 = self.store.save_run(self.cid, "gap", {"score": 30}, "score=30%")
+
+        latest = self.store.latest_runs_by_type(self.cid)
+        self.assertEqual(set(latest), {"gap", "scan"})
+        self.assertEqual(latest["gap"]["id"], gap2)
+        self.assertEqual(latest["gap"]["summary"], "score=30%")
+        self.assertEqual(latest["scan"]["summary"], "files=10")
+
+    def test_latest_runs_by_type_empty(self):
+        self.assertEqual(self.store.latest_runs_by_type(self.cid), {})
+
     def test_run_requires_existing_company(self):
         with self.assertRaises(ValueError):
             self.store.save_run("ghost-co", "gap", {})

@@ -13,7 +13,7 @@ Core loop: `Company Profile -> Required State -> Workspace Inventory -> Gap Repo
 - `evidence-room/` - YC application preparation evidence room (answers, metrics, demo, interviews)
 - `resolver/` - deterministic state resolver engine (Python) + test suite
 - `inventory/` - read-only workspace metadata scanner: local trees, JSON snapshots, and real Google Drive via `scan --drive` (read-only `drive.metadata.readonly` scope; optional `[drive]` extra; incremental scans via `--state` file + `changes.list` tokens)
-- `store/` - SQLite (WAL) persistence: versioned, schema-validated profiles (`profile save|list|show`), engine-run history (`--record` + `history`), and an approval decision ledger (`approve`/`approvals`)
+- `store/` - SQLite (WAL) persistence: versioned, schema-validated profiles (`profile save|list|show`), engine-run history (`--record` + `history`), an approval decision ledger (`approve`/`approvals`), and a whole-loop summary (`status`)
 - `gap_engine/` - required-vs-observed gap analysis engine & infrastructure scoring
 - `compiler/` - workspace compiler: creates folder taxonomy, Master Register, and governed templates
 - `guardian/` - company guardian: weekly drift monitoring, policy staleness, and health digest; `--propose` emits remediation proposals per drift event via consul-core
