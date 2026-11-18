@@ -14,7 +14,7 @@ import json
 import re
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from store.validate import validate
 
@@ -50,6 +50,17 @@ CREATE TABLE IF NOT EXISTS runs (
     created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_runs_company ON runs(company_id, run_type, created_at);
+
+CREATE TABLE IF NOT EXISTS approvals (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_id TEXT NOT NULL REFERENCES companies(company_id),
+    artifact_id TEXT NOT NULL,
+    decision TEXT NOT NULL CHECK (decision IN ('approved', 'rejected')),
+    approver TEXT NOT NULL,
+    note TEXT,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_approvals_company ON approvals(company_id, artifact_id, id);
 """
 
 RUN_TYPES = {"scan", "resolve", "gap", "compile", "guardian"}
@@ -204,6 +215,65 @@ class ProfileStore:
             "id": row[0], "company_id": row[1], "run_type": row[2],
             "summary": row[3], "payload": json.loads(row[4]), "created_at": row[5],
         }
+
+    def record_decision(
+        self,
+        company_id: str,
+        artifact_id: str,
+        decision: str,
+        approver: str,
+        note: str = "",
+    ) -> int:
+        """Append an approval decision for an artifact. Decisions are an
+        immutable ledger — the latest row per artifact_id wins. artifact_id
+        '*' is the wildcard approving all artifacts."""
+        if decision not in ("approved", "rejected"):
+            raise ValueError(f"invalid decision '{decision}' (expected 'approved' or 'rejected')")
+        exists = self.conn.execute(
+            "SELECT 1 FROM companies WHERE company_id = ?", (company_id,)
+        ).fetchone()
+        if not exists:
+            raise ValueError(f"no company '{company_id}' in store — save a profile first")
+        with self.conn:
+            cur = self.conn.execute(
+                "INSERT INTO approvals (company_id, artifact_id, decision, approver, note, created_at) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    company_id,
+                    artifact_id,
+                    decision,
+                    approver,
+                    note,
+                    datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                ),
+            )
+        return cur.lastrowid
+
+    def approved_artifact_ids(self, company_id: str) -> Set[str]:
+        """Effective approvals: latest decision per artifact_id wins.
+        A returned '*' means every artifact is approved."""
+        rows = self.conn.execute(
+            "SELECT artifact_id, decision FROM approvals a "
+            "WHERE company_id = ? AND id = ("
+            "SELECT MAX(id) FROM approvals "
+            "WHERE company_id = a.company_id AND artifact_id = a.artifact_id)",
+            (company_id,),
+        ).fetchall()
+        return {r[0] for r in rows if r[1] == "approved"}
+
+    def list_decisions(self, company_id: str, limit: int = 50) -> List[Dict[str, Any]]:
+        rows = self.conn.execute(
+            "SELECT id, artifact_id, decision, approver, note, created_at "
+            "FROM approvals WHERE company_id = ? ORDER BY id DESC LIMIT ?",
+            (company_id, limit),
+        ).fetchall()
+        return [
+            {
+                "id": r[0], "artifact_id": r[1], "decision": r[2],
+                "approver": r[3], "note": r[4], "created_at": r[5],
+            }
+            for r in rows
+        ]
 
     def close(self) -> None:
         self.conn.close()

@@ -110,5 +110,52 @@ class TestRunHistory(unittest.TestCase):
             self.store.save_run(self.cid, "warp-drive", {})
 
 
+class TestApprovals(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = Path(tempfile.mkdtemp(prefix="opsgraph_approvals_"))
+        self.store = ProfileStore(self.temp_dir / "test.db")
+        cid, _ = self.store.save_profile(_valid_profile())
+        self.cid = cid
+
+    def tearDown(self):
+        self.store.close()
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_record_and_effective_approvals(self):
+        d1 = self.store.record_decision(self.cid, "ES-001", "approved", "Founder")
+        d2 = self.store.record_decision(self.cid, "CO-001", "approved", "Founder", "ship it")
+        self.assertEqual((d1, d2), (1, 2))
+        self.assertEqual(self.store.approved_artifact_ids(self.cid), {"ES-001", "CO-001"})
+
+    def test_latest_decision_wins(self):
+        self.store.record_decision(self.cid, "ES-001", "approved", "Founder")
+        self.store.record_decision(self.cid, "ES-001", "rejected", "Security Lead")
+        self.assertNotIn("ES-001", self.store.approved_artifact_ids(self.cid))
+
+        self.store.record_decision(self.cid, "ES-001", "approved", "Security Lead")
+        self.assertIn("ES-001", self.store.approved_artifact_ids(self.cid))
+
+    def test_wildcard_approval(self):
+        self.store.record_decision(self.cid, "*", "approved", "Founder")
+        self.assertEqual(self.store.approved_artifact_ids(self.cid), {"*"})
+
+    def test_decision_requires_existing_company(self):
+        with self.assertRaises(ValueError):
+            self.store.record_decision("ghost-co", "ES-001", "approved", "Founder")
+
+    def test_decision_validated(self):
+        with self.assertRaises(ValueError):
+            self.store.record_decision(self.cid, "ES-001", "maybe", "Founder")
+
+    def test_list_decisions_newest_first(self):
+        self.store.record_decision(self.cid, "ES-001", "approved", "Founder")
+        self.store.record_decision(self.cid, "CO-001", "rejected", "Security Lead", "needs legal review")
+        decisions = self.store.list_decisions(self.cid)
+        self.assertEqual([d["artifact_id"] for d in decisions], ["CO-001", "ES-001"])
+        self.assertEqual(decisions[0]["decision"], "rejected")
+        self.assertEqual(decisions[0]["approver"], "Security Lead")
+        self.assertEqual(decisions[0]["note"], "needs legal review")
+
+
 if __name__ == "__main__":
     unittest.main()

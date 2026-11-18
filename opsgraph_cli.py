@@ -212,6 +212,25 @@ def cmd_compile(args):
 
     compiler = WorkspaceCompiler()
     approved_set = set(args.approve) if args.approve else None
+    held_count = None
+
+    if args.require_approval:
+        db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
+        store = ProfileStore(db_path)
+        try:
+            approved = store.approved_artifact_ids(company_id_for(profile_data))
+        finally:
+            store.close()
+        approved_set = None if "*" in approved else approved
+        if args.approve:
+            approved_set = set(args.approve) if approved_set is None else approved_set & set(args.approve)
+        eligible = compiler.plan(
+            profile_data=profile_data,
+            inventory=inventory_snapshot,
+            target_dir=args.target,
+        )
+        eligible_ids = {a["id"] for a in eligible.artifacts_to_compile}
+        held_count = len(eligible_ids - approved_set) if approved_set is not None else 0
 
     if args.dry_run:
         plan = compiler.plan(
@@ -221,6 +240,8 @@ def cmd_compile(args):
             approved_artifact_ids=approved_set,
         )
         print(format_plan_markdown(plan))
+        if held_count is not None:
+            print(f"   Held for approval : {held_count} artifacts")
     else:
         result = compiler.execute(
             profile_data=profile_data,
@@ -235,10 +256,15 @@ def cmd_compile(args):
         print(f"   Artifacts Stamped: {len(result.artifacts_created)}")
         print(f"   Master Register  : {result.master_register_path}")
         print(f"   Audit Log        : {result.audit_log_path}")
+        if held_count is not None:
+            print(f"   Held for approval : {held_count} artifacts")
 
+        summary = f"register_v{result.register_version} artifacts={len(result.artifacts_created)}"
+        if held_count is not None:
+            summary += f" held={held_count}"
         _record_run(
             args, "compile", asdict(result),
-            summary=f"register_v{result.register_version} artifacts={len(result.artifacts_created)}",
+            summary=summary,
             profile_data=profile_data,
         )
 
@@ -272,6 +298,44 @@ def cmd_guardian(args):
         summary=f"health={digest.health_score}% events={digest.total_drift_events}",
         profile_data=profile_data,
     )
+
+
+def cmd_approve(args):
+    db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
+    store = ProfileStore(db_path)
+    decision = "rejected" if args.reject else "approved"
+    try:
+        for artifact_id in args.artifact_ids:
+            try:
+                decision_id = store.record_decision(
+                    args.company_id, artifact_id, decision, args.approver, args.note
+                )
+            except ValueError as e:
+                sys.stderr.write(f"Error: {e}\n")
+                sys.exit(1)
+            print(f"{artifact_id}: {decision} by {args.approver} (decision #{decision_id})")
+    finally:
+        store.close()
+
+
+def cmd_approvals(args):
+    db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
+    store = ProfileStore(db_path)
+    try:
+        approved = store.approved_artifact_ids(args.company_id)
+        print(f"Effective approvals for {args.company_id}:")
+        if not approved:
+            print("  (none — nothing is currently approved)")
+        for aid in sorted(approved):
+            suffix = "  (all artifacts)" if aid == "*" else ""
+            print(f"  {aid}{suffix}")
+        decisions = store.list_decisions(args.company_id, limit=10)
+        print(f"Latest decisions ({len(decisions)} shown):")
+        for d in decisions:
+            note = f"  \"{d['note']}\"" if d["note"] else ""
+            print(f"  #{d['id']}  {d['created_at'][:19]}  {d['artifact_id']}  {d['decision']}  by {d['approver']}{note}")
+    finally:
+        store.close()
 
 
 def cmd_history(args):
@@ -378,9 +442,27 @@ def main():
     p_compile.add_argument("--target", default="./workspace_compiled", help="Target output folder")
     p_compile.add_argument("--dry-run", action="store_true", help="Preview plan without writing")
     p_compile.add_argument("--approve", nargs="+", help="Specific artifact IDs to compile")
+    p_compile.add_argument("--require-approval", action="store_true",
+                           help="Only compile artifacts with a recorded approval in the store")
     p_compile.add_argument("--record", action="store_true", help="Persist this run to the store")
     p_compile.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_compile.set_defaults(func=cmd_compile)
+
+    # approve
+    p_approve = subparsers.add_parser("approve", help="Record an approval or rejection decision for artifacts")
+    p_approve.add_argument("company_id", help="Company ID (domain slug)")
+    p_approve.add_argument("artifact_ids", nargs="+", help="Artifact IDs to decide on ('*' approves all)")
+    p_approve.add_argument("--approver", required=True, help="Name of the person making the decision")
+    p_approve.add_argument("--note", default="", help="Optional decision note")
+    p_approve.add_argument("--reject", action="store_true", help="Record a rejection instead of an approval")
+    p_approve.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
+    p_approve.set_defaults(func=cmd_approve)
+
+    # approvals
+    p_approvals = subparsers.add_parser("approvals", help="Show effective approvals and recent decisions")
+    p_approvals.add_argument("company_id", help="Company ID (domain slug)")
+    p_approvals.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
+    p_approvals.set_defaults(func=cmd_approvals)
 
     # guardian
     p_guardian = subparsers.add_parser("guardian", help="Continuous drift monitoring and weekly Health Digest")
