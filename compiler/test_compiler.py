@@ -117,6 +117,50 @@ class TestWorkspaceCompiler(unittest.TestCase):
         self.assertEqual(len(result1.folders_created), len(result2.folders_created))
         self.assertEqual(len(result1.artifacts_created), len(result2.artifacts_created))
 
+    def test_register_versioning_and_provenance(self):
+        target_path = Path(self.temp_dir)
+        reg_json = target_path / "00_Company_Control" / "CO-001_Master_Document_Register.json"
+
+        r1 = self.compiler.execute(
+            profile_data=self.profile, inventory=self.inventory,
+            target_dir=self.temp_dir, dry_run=False,
+        )
+        self.assertEqual(r1.register_version, 1)
+        data1 = json.loads(reg_json.read_text())
+        self.assertEqual(data1["register_version"], 1)
+        self.assertEqual(data1["provenance"]["action"], "compile")
+        self.assertEqual(data1["provenance"]["ruleset_version"], "0.3")
+        self.assertIn("profile_sha256", data1["provenance"])
+        self.assertEqual(len(data1["entries"]), 31)
+        v1_rows = {r["Document_ID"]: r["Row_Version"] for r in data1["entries"]}
+
+        # identical recompile: same content -> version holds
+        r2 = self.compiler.execute(
+            profile_data=self.profile, inventory=self.inventory,
+            target_dir=self.temp_dir, dry_run=False,
+        )
+        self.assertEqual(r2.register_version, 1)
+        data2 = json.loads(reg_json.read_text())
+        self.assertEqual(data2["provenance"]["action"], "recompile")
+        self.assertEqual(data2["provenance"]["rows_unchanged"], 31)
+
+        # changed input -> register version bumps, changed rows bump
+        profile2 = json.loads(json.dumps(self.profile))
+        profile2["functions"][0]["owner"] = "CTO (Fractional)"  # Owner column changes
+        r3 = self.compiler.execute(
+            profile_data=profile2, inventory=self.inventory,
+            target_dir=self.temp_dir, dry_run=False,
+        )
+        self.assertEqual(r3.register_version, 2)
+        data3 = json.loads(reg_json.read_text())
+        self.assertEqual(data3["provenance"]["previous_register_version"], 1)
+        self.assertGreater(data3["provenance"]["rows_changed"] + data3["provenance"]["rows_added"], 0)
+        v3_rows = {r["Document_ID"]: r["Row_Version"] for r in data3["entries"]}
+        self.assertTrue(
+            any(v3_rows[k] > v1_rows[k] for k in v1_rows if v3_rows.get(k) is not None),
+            "at least one row version must bump on changed input",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

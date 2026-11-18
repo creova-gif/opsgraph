@@ -12,7 +12,8 @@ Core loop: `Company Profile -> Required State -> Workspace Inventory -> Gap Repo
 ## Layout
 - `evidence-room/` - YC application preparation evidence room (answers, metrics, demo, interviews)
 - `resolver/` - deterministic state resolver engine (Python) + test suite
-- `inventory/` - read-only workspace metadata scanner: local trees, JSON snapshots, and real Google Drive via `scan --drive` (read-only `drive.metadata.readonly` scope; optional `[drive]` extra)
+- `inventory/` - read-only workspace metadata scanner: local trees, JSON snapshots, and real Google Drive via `scan --drive` (read-only `drive.metadata.readonly` scope; optional `[drive]` extra; incremental scans via `--state` file + `changes.list` tokens)
+- `store/` - SQLite (WAL) persistence: versioned, schema-validated company profiles via `opsgraph profile save|list|show`
 - `gap_engine/` - required-vs-observed gap analysis engine & infrastructure scoring
 - `compiler/` - workspace compiler: creates folder taxonomy, Master Register, and governed templates
 - `guardian/` - company guardian: weekly drift monitoring, policy staleness, and health digest
@@ -20,7 +21,7 @@ Core loop: `Company Profile -> Required State -> Workspace Inventory -> Gap Repo
 - `docs/pilot/` - concierge pilot offer one-pager, 20-step delivery checklist, intake form
 - `docs/strategy/` - viability brief, execution blueprint, YC playbook (source of truth for decisions)
 - `schema/company-profile.schema.json` - onboarding output (P0)
-- `rules/core-artifacts.yaml` / `.json` - Operating Graph node ruleset, 31 governed artifacts (v0.2)
+- `rules/core-artifacts.json` - Operating Graph node ruleset (JSON is the single canonical source), 31 governed artifacts + placement policy (v0.3)
 - `examples/` - sample profiles & drive inventories for testing (Seed, Pre-seed, Series A)
 - gstack is available as a user-level skill install; not vendored here
 
@@ -32,7 +33,7 @@ dump templates - never claim compliance. Delete is never allowed in v1.
 - [x] **Resolver (P0):** Profile + rules -> required artifact list with reasons and topological order (`resolver/`)
 - [x] **Drive Inventory (P1):** Read-only metadata scanner — real Google Drive API (OAuth installed-app or service account, `drive.metadata.readonly`), JSON snapshots & local trees (`inventory/`)
 - [x] **Gap Analysis Engine (P1):** Required vs observed diff, domain scorecards, and 0-100% Infrastructure Score (`gap_engine/`)
-- [x] **Workspace Compiler Prototype (P1):** Dry-run preview, folder taxonomy, Master Register sheet, and template stubs with provenance (`compiler/`)
+- [x] **Workspace Compiler Prototype (P1):** Dry-run preview, folder taxonomy, versioned Master Register (register + row versions, provenance) and template stubs with provenance (`compiler/`)
 - [x] **Company Guardian Prototype (P2):** Continuous drift detection, staleness alerts, duplicate collisions, and weekly Health Digest (`guardian/`)
 - [x] **Interactive Visual Dashboard:** Standalone single-file HTML report with 0–100% dial, gap matrix, and drift feed (`dashboard/`)
 - [x] **Pilot Offer Kit:** 48-Hour offer one-pager, delivery checklist, intake form (`docs/pilot/`)

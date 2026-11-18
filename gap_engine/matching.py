@@ -9,7 +9,7 @@ Company Guardian. All matching is phrase-boundary aware so short aliases
 from __future__ import annotations
 
 import re
-from typing import List
+from typing import List, Optional
 
 from inventory.scanner import WorkspaceFile
 from resolver.resolver import ResolvedArtifact
@@ -60,6 +60,49 @@ def normalize(text: str) -> str:
 def contains_phrase(haystack_norm: str, needle_norm: str) -> bool:
     """Whole-phrase boundary match over normalized (space-separated) text."""
     return f" {needle_norm} " in f" {haystack_norm} "
+
+
+# Placement policy — folder components that mark a file as living outside the
+# canonical taxonomy. Defaults mirror rules/core-artifacts.json `placement`;
+# ruleset values override via `load_placement_policy`.
+DEFAULT_ARCHIVE_DIRS = [
+    "old backups", "old backups & shared", "backups", "archive", "archives",
+    "archived", "_archive", "legacy", "zz archive", "superseded", "attic",
+]
+DEFAULT_SCRATCH_DIRS = [
+    "random", "misc", "unsorted", "temp", "tmp",
+    "downloads_personal", "scratch", "inbox_unsorted",
+]
+
+
+def placement_class(
+    path: str,
+    archive_dirs: Optional[List[str]] = None,
+    scratch_dirs: Optional[List[str]] = None,
+) -> str:
+    """Classify a file path as 'archive', 'scratch', or 'canonical'.
+
+    Matches whole path *components* (normalized), so "Old Backups/x.md" is
+    'archive' while "99_Archive/x.md" (the canonical archive taxonomy root)
+    stays 'canonical'.
+    """
+    archives = {normalize(d) for d in (archive_dirs if archive_dirs is not None else DEFAULT_ARCHIVE_DIRS)}
+    scratch = {normalize(d) for d in (scratch_dirs if scratch_dirs is not None else DEFAULT_SCRATCH_DIRS)}
+    components = {normalize(seg) for seg in path.split("/") if seg}
+    if components & archives:
+        return "archive"
+    if components & scratch:
+        return "scratch"
+    return "canonical"
+
+
+def placement_policy(rules_data: Optional[dict]) -> dict:
+    """Extract archive/scratch dir lists from loaded rules data (or defaults)."""
+    placement = (rules_data or {}).get("placement", {})
+    return {
+        "archive_dirs": placement.get("archive_dirs", DEFAULT_ARCHIVE_DIRS),
+        "scratch_dirs": placement.get("scratch_dirs", DEFAULT_SCRATCH_DIRS),
+    }
 
 
 def find_matching_files(art: ResolvedArtifact, files: List[WorkspaceFile]) -> List[WorkspaceFile]:

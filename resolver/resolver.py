@@ -63,6 +63,19 @@ class ResolutionReport:
     compilation_order: List[str]
     artifacts: List[ResolvedArtifact]
     critical_path: List[str]
+    warnings: List[str] = field(default_factory=list)
+
+
+def load_rules_data(rules_path: Optional[Path] = None) -> Dict[str, Any]:
+    """Load the canonical ruleset JSON. Shared by resolver, analyzer, guardian."""
+    if rules_path is None:
+        base_dir = Path(__file__).resolve().parent.parent
+        rules_path = base_dir / "rules" / "core-artifacts.json"
+    rules_path = Path(rules_path)
+    if not rules_path.exists():
+        raise FileNotFoundError(f"Artifact rules file not found: {rules_path}")
+    with open(rules_path, "r", encoding="utf-8") as f:
+        return json.load(f)
 
 
 class StateResolver:
@@ -71,14 +84,10 @@ class StateResolver:
             # Default to rules/core-artifacts.json relative to project root
             base_dir = Path(__file__).resolve().parent.parent
             rules_path = base_dir / "rules" / "core-artifacts.json"
-        
+
         self.rules_path = Path(rules_path)
-        if not self.rules_path.exists():
-            raise FileNotFoundError(f"Artifact rules file not found: {self.rules_path}")
-        
-        with open(self.rules_path, "r", encoding="utf-8") as f:
-            self.rules_data = json.load(f)
-        
+        self.rules_data = load_rules_data(self.rules_path)
+
         self.taxonomy_roots: Dict[str, str] = self.rules_data.get("taxonomy_roots", {})
         self.artifacts_catalog: List[Dict[str, Any]] = self.rules_data.get("artifacts", [])
 
@@ -178,7 +187,19 @@ class StateResolver:
             )
 
         # Compute compilation order via topological sort
-        compilation_order = self._topological_sort(resolved_list)
+        compilation_order, cycle_ids = self._topological_sort(resolved_list)
+
+        warnings: List[str] = []
+        if cycle_ids:
+            warnings.append(
+                "Dependency cycle detected among artifacts "
+                f"[{', '.join(cycle_ids)}]; appended to compilation order in "
+                "declaration order. Rule authors should break the cycle."
+            )
+            cycle_set = set(cycle_ids)
+            for art in resolved_list:
+                if art.id in cycle_set:
+                    art.reason += f"; WARNING: participates in a depends_on cycle ({', '.join(cycle_ids)})"
 
         # Critical path: required artifacts that are marked high criticality
         critical_path = [
@@ -203,6 +224,7 @@ class StateResolver:
             compilation_order=compilation_order,
             artifacts=resolved_list,
             critical_path=critical_path,
+            warnings=warnings,
         )
 
     def _evaluate_condition(
@@ -270,7 +292,9 @@ class StateResolver:
             return owner_map.get("operations") or "COO / Founder"
         return "Founder / CEO"
 
-    def _topological_sort(self, artifacts: List[ResolvedArtifact]) -> List[str]:
+    def _topological_sort(self, artifacts: List[ResolvedArtifact]) -> Tuple[List[str], List[str]]:
+        """Kahn's algorithm. Returns (order, cycle_ids) — artifacts left
+        unresolved by the sort form (or depend on) a dependency cycle."""
         id_set = {a.id for a in artifacts}
         graph: Dict[str, List[str]] = defaultdict(list)
         in_degree: Dict[str, int] = {a.id: 0 for a in artifacts}
@@ -292,12 +316,11 @@ class StateResolver:
                 if in_degree[neighbor] == 0:
                     queue.append(neighbor)
 
-        # If any remain due to unexpected cycles, append them
-        for a in artifacts:
-            if a.id not in order:
-                order.append(a.id)
+        # Nodes left unresolved are in, or downstream of, a cycle
+        cycle_ids = [a.id for a in artifacts if a.id not in order]
+        order.extend(cycle_ids)
 
-        return order
+        return order, cycle_ids
 
 
 def format_markdown(report: ResolutionReport) -> str:
@@ -336,6 +359,13 @@ def format_markdown(report: ResolutionReport) -> str:
         f" -> ".join(report.compilation_order),
         f"```",
         f"",
+    ])
+    if report.warnings:
+        lines.append("### ⚠️ Resolver Warnings")
+        for w in report.warnings:
+            lines.append(f"- {w}")
+        lines.append("")
+    lines.extend([
         f"## 4. Full Artifact Evaluation Table",
         f"",
         f"| ID | Name | Root | Level | Criticality | Assigned Owner | Review Cadence | Frameworks | Reason |",

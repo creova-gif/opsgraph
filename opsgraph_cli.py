@@ -25,9 +25,10 @@ from dashboard.server import serve_dashboard
 from demo.run_demo import run_full_demo
 from gap_engine.analyzer import GapAnalyzer, format_gap_markdown
 from guardian.guardian import CompanyGuardian, format_health_digest_markdown, load_register_entries
-from inventory.drive_source import GoogleDriveSource
+from inventory.drive_source import GoogleDriveSource, merge_delta
 from inventory.scanner import LocalDirectorySource, SnapshotSource, WorkspaceScanner
 from resolver.resolver import StateResolver, format_markdown
+from store.store import DEFAULT_DB_PATH, ProfileStore
 
 
 def cmd_resolve(args):
@@ -48,6 +49,48 @@ def cmd_resolve(args):
         print(format_markdown(report))
 
 
+def cmd_profile(args):
+    db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
+    store = ProfileStore(db_path)
+    try:
+        if args.profile_action == "save":
+            profile_path = Path(args.file)
+            if not profile_path.exists():
+                sys.stderr.write(f"Error: Profile file not found: {profile_path}\n")
+                sys.exit(1)
+            with open(profile_path, "r", encoding="utf-8") as f:
+                profile_data = json.load(f)
+            try:
+                company_id, version = store.save_profile(profile_data)
+            except ValueError as e:
+                sys.stderr.write(f"Error: {e}\n")
+                sys.exit(1)
+            print(f"Saved profile '{company_id}' as version {version} -> {db_path}")
+
+        elif args.profile_action == "list":
+            companies = store.list_companies()
+            if not companies:
+                print("No companies persisted yet.")
+            for c in companies:
+                print(f"- {c['company_id']}  ({c['legal_name']})  domain={c['domain']}  latest=v{c['latest_version']}")
+
+        elif args.profile_action == "show":
+            profile = store.get_profile(args.company_id, version=args.version)
+            if profile is None:
+                sys.stderr.write(f"Error: no profile '{args.company_id}' (version {args.version or 'latest'}) in {db_path}\n")
+                sys.exit(1)
+            print(json.dumps(profile, indent=2))
+    finally:
+        store.close()
+
+
+def _write_state_file(state_path: Path, snapshot) -> None:
+    """Persist snapshot + changes token for the next incremental Drive scan."""
+    state_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(state_path, "w", encoding="utf-8") as f:
+        json.dump(asdict(snapshot), f, indent=2)
+
+
 def cmd_scan(args):
     if args.drive:
         if not args.credentials:
@@ -61,7 +104,25 @@ def cmd_scan(args):
             impersonate=args.impersonate,
             domain=args.domain,
         )
-        snapshot = source.scan()
+        state_path = Path(args.state) if args.state else None
+        if state_path and state_path.exists():
+            # Incremental: merge a changes.list delta onto the persisted snapshot
+            prior = SnapshotSource(state_path).scan()
+            token = prior.scan_metadata.get("drive_changes_token")
+            if token:
+                delta, new_token = source.scan_delta(token)
+                if new_token:
+                    delta.scan_metadata["drive_changes_token"] = new_token
+                snapshot = merge_delta(prior, delta)
+            else:
+                snapshot = source.scan()  # legacy state file without token
+            _write_state_file(state_path, snapshot)
+        elif state_path:
+            # First incremental run: full scan seeds the state file
+            snapshot = source.scan()
+            _write_state_file(state_path, snapshot)
+        else:
+            snapshot = source.scan()
     elif args.snapshot:
         snap_path = Path(args.snapshot)
         if not snap_path.exists():
@@ -217,6 +278,20 @@ def main():
     p_resolve.add_argument("--format", choices=["markdown", "json"], default="markdown")
     p_resolve.set_defaults(func=cmd_resolve)
 
+    # profile
+    p_profile = subparsers.add_parser("profile", help="Persist and retrieve versioned company profiles (SQLite store)")
+    profile_sub = p_profile.add_subparsers(dest="profile_action", required=True)
+    p_profile_save = profile_sub.add_parser("save", help="Validate + persist a profile JSON as a new version")
+    p_profile_save.add_argument("file", help="Path to company profile JSON")
+    p_profile_save.add_argument("--db", default=None, help=f"SQLite DB path (default: {DEFAULT_DB_PATH})")
+    p_profile_list = profile_sub.add_parser("list", help="List persisted companies")
+    p_profile_list.add_argument("--db", default=None, help=f"SQLite DB path (default: {DEFAULT_DB_PATH})")
+    p_profile_show = profile_sub.add_parser("show", help="Print a persisted profile version")
+    p_profile_show.add_argument("company_id", help="Company ID (domain slug)")
+    p_profile_show.add_argument("--version", type=int, default=None, help="Version number (default: latest)")
+    p_profile_show.add_argument("--db", default=None, help=f"SQLite DB path (default: {DEFAULT_DB_PATH})")
+    p_profile.set_defaults(func=cmd_profile)
+
     # scan
     p_scan = subparsers.add_parser("scan", help="Scan workspace metadata without reading sensitive content")
     p_scan.add_argument("--snapshot", help="Path to JSON inventory snapshot")
@@ -226,6 +301,7 @@ def main():
     p_scan.add_argument("--token", help="Cached OAuth token path for --drive (created on first run)")
     p_scan.add_argument("--impersonate", help="Workspace admin user for service-account domain delegation")
     p_scan.add_argument("--domain", default="local", help="Workspace domain label recorded in scan metadata")
+    p_scan.add_argument("--state", help="State file for incremental --drive scans (created on first run; tracks changes.list token)")
     p_scan.add_argument("--output", help="Optional output JSON path")
     p_scan.set_defaults(func=cmd_scan)
 

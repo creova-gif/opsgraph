@@ -16,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
 from gap_engine.analyzer import GapAnalyzer
-from gap_engine.matching import contains_phrase, find_matching_files, normalize
+from gap_engine.matching import contains_phrase, find_matching_files, normalize, placement_class, placement_policy
 from guardian.guardian import load_register_entries
 from inventory.scanner import WorkspaceFile, InventorySnapshot
 from resolver.resolver import ResolvedArtifact, StateResolver
@@ -82,6 +82,31 @@ class TestNaiveTimestamps(unittest.TestCase):
         )
         report = GapAnalyzer().analyze(resolution, snap)
         self.assertGreater(report.infrastructure_score, 0)
+
+
+class TestPlacementPolicy(unittest.TestCase):
+    def test_archive_dirs_flag_archive_class(self):
+        self.assertEqual(placement_class("/Old Backups & Shared/x.doc"), "archive")
+        self.assertEqual(placement_class("/backups/2024/file.md"), "archive")
+
+    def test_scratch_dirs_flag_scratch_class(self):
+        self.assertEqual(placement_class("/downloads_personal/stuff.zip"), "scratch")
+        self.assertEqual(placement_class("/Temp/file.tmp"), "scratch")
+
+    def test_canonical_paths_untouched(self):
+        # the canonical archive taxonomy root must NOT be flagged
+        self.assertEqual(placement_class("/99_Archive/ES-001_old.md"), "canonical")
+        self.assertEqual(placement_class("/05_Engineering_Security/ES-001.md"), "canonical")
+
+    def test_component_match_not_substring(self):
+        # "archivex" must not match "archive"
+        self.assertEqual(placement_class("/archivex/file.md"), "canonical")
+
+    def test_rules_driven_override(self):
+        policy = placement_policy({"placement": {"archive_dirs": ["attic"], "scratch_dirs": ["bin"]}})
+        self.assertEqual(placement_class("/attic/x", **policy), "archive")
+        self.assertEqual(placement_class("/bin/x", **policy), "scratch")
+        self.assertEqual(placement_class("/backups/x", **policy), "canonical")
 
 
 class TestRegisterLoading(unittest.TestCase):

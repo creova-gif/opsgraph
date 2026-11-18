@@ -19,9 +19,9 @@ from typing import Any, Dict, List, Optional
 # Ensure project root is in sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from gap_engine.matching import find_matching_files
+from gap_engine.matching import find_matching_files, placement_class, placement_policy
 from inventory.scanner import InventorySnapshot, WorkspaceScanner
-from resolver.resolver import ResolutionReport, StateResolver
+from resolver.resolver import ResolutionReport, StateResolver, load_rules_data
 
 CRITICALITY_WEIGHTS = {"high": 3, "medium": 2, "low": 1}
 
@@ -70,8 +70,13 @@ class GapReport:
 
 
 class GapAnalyzer:
-    def __init__(self, ref_time: Optional[datetime.datetime] = None):
+    def __init__(
+        self,
+        ref_time: Optional[datetime.datetime] = None,
+        rules_data: Optional[Dict[str, Any]] = None,
+    ):
         self.ref_time = ref_time or datetime.datetime.now(datetime.timezone.utc)
+        self._placement = placement_policy(rules_data or load_rules_data())
 
     def analyze(self, resolver_report: ResolutionReport, inventory: InventorySnapshot) -> GapReport:
         # Parse scanned_at or use ref_time
@@ -151,8 +156,9 @@ class GapAnalyzer:
                         domain_buckets[root_id]["earned"] += weight * 0.125
                     remediation = f"File is {days_stale} days past review cadence ({art.review_cadence_days}d). {art.resolved_owner} must review and re-stamp."
 
-                # Check if misplaced
-                elif "old backups" in target_file.path.lower() or "random" in target_file.path.lower():
+                # Check if misplaced — rules-driven placement policy, not
+                # substring heuristics ("99_Archive" canonical root stays canonical)
+                elif placement_class(target_file.path, **self._placement) != "canonical":
                     status = "MISPLACED"
                     if art.level == "required":
                         domain_buckets[root_id]["earned"] += weight * 0.75

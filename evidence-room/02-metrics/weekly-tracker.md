@@ -32,7 +32,7 @@
 - **Recurring Guardian MRR:** `$0` (Target: $99 – $499/mo)
 
 ### Product Efficiency & Automation Rate
-- **Total Operational Artifacts in Standard Pack:** 31 (defined in `rules/core-artifacts.yaml`)
+- **Total Operational Artifacts in Standard Pack:** 31 (defined in `rules/core-artifacts.json`)
 - **Average Artifacts Auto-Compiled vs Manually Edited:** `0%` compiled / `100%` concierge
 - **Target for End of Sprint:** `>= 70%` automated compilation of standard artifacts without human re-writing.
 - **Guardian Drift Precision:** Target `< 10%` false positives on drift detection.
@@ -43,7 +43,7 @@
 *(Append brief factual updates here each week: what changed, what customer insight was discovered, what number moved).*
 
 ### Week 1 (Oct 20, 2026)
-- Codified 31 core artifacts into `rules/core-artifacts.yaml` and `schema/company-profile.schema.json`.
+- Codified 31 core artifacts into `rules/core-artifacts.json` and `schema/company-profile.schema.json`.
 - Established Evidence Room structure (01 through 09).
 - Drafted YC Winter 2027 application answers with factual discipline.
 

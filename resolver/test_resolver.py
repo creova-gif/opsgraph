@@ -132,6 +132,49 @@ class TestStateResolver(unittest.TestCase):
         self.assertIn("ignored by first-match precedence", art.reason)
         self.assertIn("required", art.reason)  # the losing level is still visible
 
+    def test_dependency_cycle_is_reported(self):
+        """depends_on cycles must surface as warnings, not silent appends."""
+        import tempfile
+
+        rules = {
+            "taxonomy_roots": {"00": "Company Control"},
+            "artifacts": [
+                {"id": "T-A", "name": "A", "root": "00", "depends_on": ["T-B"],
+                 "requirement": {"default": "required"}},
+                {"id": "T-B", "name": "B", "root": "00", "depends_on": ["T-A"],
+                 "requirement": {"default": "required"}},
+                {"id": "T-C", "name": "C", "root": "00",
+                 "requirement": {"default": "required"}},
+            ],
+        }
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(rules, f)
+            rules_path = Path(f.name)
+
+        resolver = StateResolver(rules_path=rules_path)
+        report = resolver.resolve({
+            "company": {"legal_name": "Cycle Co"},
+            "stage": {"funding_stage": "seed", "employee_count": 5},
+            "triggers": [],
+            "functions": [],
+        })
+        self.assertTrue(report.warnings, "cycle must produce a warning")
+        self.assertIn("T-A", report.warnings[0])
+        self.assertIn("T-B", report.warnings[0])
+        # cycle members still appear in compilation order, at the end
+        self.assertEqual(report.compilation_order[0], "T-C")
+        self.assertIn("T-A", report.compilation_order)
+        art_a = next(a for a in report.artifacts if a.id == "T-A")
+        self.assertIn("cycle", art_a.reason)
+
+    def test_no_cycle_no_warnings(self):
+        report = self.resolver.resolve(
+            json.loads((self.base_dir / "examples" / "seed-b2b-saas.json").read_text())
+        )
+        self.assertEqual(report.warnings, [])
+
     def test_determinism_across_runs(self):
         profile_path = self.base_dir / "examples" / "seed-b2b-saas.json"
         with open(profile_path, "r", encoding="utf-8") as f:

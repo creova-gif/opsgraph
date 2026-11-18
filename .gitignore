@@ -20,3 +20,9 @@ workspace_demo/
 tmp/
 *.log
 .claude/skills/gstack/
+
+# Local opsgraph state
+.opsgraph/
+*.db
+*.db-wal
+*.db-shm

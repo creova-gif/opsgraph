@@ -12,13 +12,14 @@ from __future__ import annotations
 import argparse
 import csv
 import datetime
+import hashlib
 import json
 import os
 import re
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 # Ensure project root is in sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -49,6 +50,7 @@ class CompilationResult:
     artifacts_created: List[str]
     audit_log_path: str
     master_register_path: str
+    register_version: int = 0
 
 
 class WorkspaceCompiler:
@@ -183,7 +185,12 @@ class WorkspaceCompiler:
         master_reg_csv = co_dir / "CO-001_Master_Document_Register.csv"
         master_reg_json = co_dir / "CO-001_Master_Document_Register.json"
 
+        # Load prior register for deterministic versioning
+        prior_version, prior_rows = self._load_prior_register(master_reg_json)
+        compilation_id = f"comp-{int(datetime.datetime.now().timestamp())}"
+
         register_rows = []
+        rows_added = rows_changed = rows_unchanged = 0
         for art in resolution.artifacts:
             # Determine lifecycle status
             compiled_item = next((a for a in plan.artifacts_to_compile if a["id"] == art.id), None)
@@ -197,7 +204,7 @@ class WorkspaceCompiler:
                 status = "OPTIONAL_NOT_COMPILED"
                 loc = "Uncompiled"
 
-            register_rows.append({
+            row = {
                 "Document_ID": art.id,
                 "Title": art.name,
                 "Taxonomy_Root": f"{art.root} {art.root_name}",
@@ -210,7 +217,46 @@ class WorkspaceCompiler:
                 "Location": loc,
                 "Status": status,
                 "Last_Updated": now_iso[:10],
-            })
+            }
+
+            # Row-level versioning: identical content keeps its prior version;
+            # new or changed rows bump. Content comparison ignores volatile fields.
+            fingerprint = self._row_fingerprint(row)
+            prior_row = prior_rows.get(art.id)
+            if prior_row is None:
+                row["Row_Version"] = 1
+                rows_added += 1
+            elif self._prior_row_fingerprint(prior_row) == fingerprint:
+                row["Row_Version"] = int(prior_row.get("Row_Version", 1) or 1)
+                rows_unchanged += 1
+            else:
+                row["Row_Version"] = int(prior_row.get("Row_Version", 0) or 0) + 1
+                rows_changed += 1
+
+            register_rows.append(row)
+
+        # Register-level version: bumps only when the entry set or any row
+        # content changed. A no-op recompile keeps the prior version.
+        content_changed = (
+            prior_version == 0
+            or rows_added > 0
+            or rows_changed > 0
+            or len(prior_rows) != len(register_rows)
+        )
+        register_version = prior_version + 1 if content_changed else prior_version
+
+        provenance = {
+            "compilation_id": compilation_id,
+            "action": "recompile" if prior_version > 0 else "compile",
+            "generated_at": now_iso,
+            "ruleset_version": self.resolver.rules_data.get("version", "unknown"),
+            "ruleset_sha256": self._file_sha256(self.resolver.rules_path),
+            "profile_sha256": self._data_sha256(profile_data),
+            "previous_register_version": prior_version,
+            "rows_added": rows_added,
+            "rows_changed": rows_changed,
+            "rows_unchanged": rows_unchanged,
+        }
 
         # Write CSV
         with open(master_reg_csv, "w", newline="", encoding="utf-8") as f:
@@ -218,9 +264,19 @@ class WorkspaceCompiler:
             writer.writeheader()
             writer.writerows(register_rows)
 
-        # Write JSON
+        # Write JSON — object envelope with provenance + versioned entries
         with open(master_reg_json, "w", encoding="utf-8") as f:
-            json.dump(register_rows, f, indent=2)
+            json.dump(
+                {
+                    "register": "CO-001",
+                    "register_version": register_version,
+                    "generated_at": now_iso,
+                    "provenance": provenance,
+                    "entries": register_rows,
+                },
+                f,
+                indent=2,
+            )
 
         created_artifacts.append(f"{co_folder}/CO-001_Master_Document_Register.csv")
 
@@ -238,11 +294,13 @@ class WorkspaceCompiler:
 
         # 4. Write Immutable Audit Log
         audit_log = {
-            "compilation_id": f"comp-{int(datetime.datetime.now().timestamp())}",
+            "compilation_id": compilation_id,
             "executed_at": now_iso,
             "company_name": plan.company_name,
             "target_directory": str(target_path),
             "ruleset_version": self.resolver.rules_data.get("version", "0.2"),
+            "register_version": register_version,
+            "register_provenance": provenance,
             "total_folders_created": len(created_folders),
             "total_artifacts_compiled": len(created_artifacts),
             "created_folders": created_folders,
@@ -263,7 +321,49 @@ class WorkspaceCompiler:
             artifacts_created=created_artifacts,
             audit_log_path=str(audit_path),
             master_register_path=str(master_reg_csv),
+            register_version=register_version,
         )
+
+    def _load_prior_register(self, master_reg_json: Path) -> Tuple[int, Dict[str, Dict[str, Any]]]:
+        """Read an existing JSON register. Returns (register_version, rows by Document_ID)."""
+        if not master_reg_json.exists():
+            return 0, {}
+        try:
+            data = json.loads(master_reg_json.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return 0, {}
+        if isinstance(data, list):  # legacy flat-list format
+            return 0, {r["Document_ID"]: r for r in data if isinstance(r, dict) and "Document_ID" in r}
+        if isinstance(data, dict):
+            entries = data.get("entries", [])
+            return (
+                int(data.get("register_version", 0) or 0),
+                {r["Document_ID"]: r for r in entries if isinstance(r, dict) and "Document_ID" in r},
+            )
+        return 0, {}
+
+    @staticmethod
+    def _row_fingerprint(row: Dict[str, Any]) -> str:
+        stable = {k: v for k, v in row.items() if k not in ("Row_Version", "Last_Updated")}
+        return hashlib.sha256(json.dumps(stable, sort_keys=True).encode("utf-8")).hexdigest()
+
+    def _prior_row_fingerprint(self, prior_row: Dict[str, Any]) -> str:
+        # Legacy rows may lack newer keys; fingerprint over the same stable subset
+        stable = {k: v for k, v in prior_row.items() if k not in ("Row_Version", "Last_Updated")}
+        return hashlib.sha256(json.dumps(stable, sort_keys=True).encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _data_sha256(data: Any) -> str:
+        return hashlib.sha256(
+            json.dumps(data, sort_keys=True, default=str).encode("utf-8")
+        ).hexdigest()
+
+    @staticmethod
+    def _file_sha256(path: Path) -> str:
+        try:
+            return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+        except OSError:
+            return "unreadable"
 
     def _master_register_folder(self, resolution: ResolutionReport) -> str:
         """Folder that hosts the Master Document Register, derived from CO-001's taxonomy root."""

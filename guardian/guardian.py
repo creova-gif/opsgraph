@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Set
 # Ensure project root is in sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from gap_engine.matching import find_matching_files
+from gap_engine.matching import find_matching_files, placement_class, placement_policy
 from inventory.scanner import InventorySnapshot, WorkspaceScanner
 from resolver.resolver import StateResolver
 
@@ -55,6 +55,7 @@ class CompanyGuardian:
     def __init__(self, resolver: Optional[StateResolver] = None, ref_time: Optional[datetime.datetime] = None):
         self.resolver = resolver or StateResolver()
         self.ref_time = ref_time or datetime.datetime.now(datetime.timezone.utc)
+        self._placement = placement_policy(self.resolver.rules_data)
 
     def audit(
         self,
@@ -130,8 +131,8 @@ class CompanyGuardian:
                 )
                 counter += 1
 
-            # 4. Check for Misplaced Files in backup/random folders
-            if any(bad in f.path.lower() for bad in ["old backups", "random", "downloads_personal", "temp"]):
+            # 4. Check for Misplaced Files — rules-driven placement policy
+            if placement_class(f.path, **self._placement) != "canonical":
                 events.append(
                     DriftEvent(
                         event_id=f"DRIFT-{counter:03d}",
@@ -235,11 +236,18 @@ class CompanyGuardian:
 
 
 def load_register_entries(reg_path: Path) -> List[Dict[str, Any]]:
-    """Load Master Document Register entries from JSON or CSV output by the compiler."""
+    """Load Master Document Register entries from JSON or CSV output by the compiler.
+
+    Handles both the legacy flat-list JSON format and the versioned envelope
+    ({"register_version", "provenance", "entries"}) written since ruleset 0.3.
+    """
     suffix = reg_path.suffix.lower()
     if suffix == ".json":
         with open(reg_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+        if isinstance(data, dict):
+            return data.get("entries", [])
+        return data
     if suffix == ".csv":
         with open(reg_path, "r", newline="", encoding="utf-8") as f:
             return list(csv.DictReader(f))

@@ -11,7 +11,7 @@
 flowchart TD
     subgraph Inputs
         CP["Company Profile\n(schema/company-profile.schema.json)"]
-        AR["Artifact Ruleset\n(rules/core-artifacts.yaml)"]
+        AR["Artifact Ruleset\n(rules/core-artifacts.json)"]
         GW["Google Workspace\n(Observed Drive State)"]
     end
 
@@ -41,7 +41,7 @@ flowchart TD
 ## 2. Core Modules & Responsibilities
 
 1. **Company Profile Schema (`schema/company-profile.schema.json`):** Captures stage (Pre-seed to Series A), team size, legal jurisdictions, business model (B2B SaaS, Marketplace, FinTech), active triggers, and regulatory frameworks (SOC 2, HIPAA, GDPR).
-2. **Artifact Rules Engine (`rules/core-artifacts.yaml`):** Codifies 31 core operational artifacts across Governance, Security, People/HR, Commercial, and Finance. Defines condition triggers, canonical file naming, numbering formats, and refresh intervals.
+2. **Artifact Rules Engine (`rules/core-artifacts.json`):** Codifies 31 core operational artifacts across Governance, Security, People/HR, Commercial, and Finance. Defines condition triggers, canonical file naming, numbering formats, and refresh intervals.
 3. **Drive Inventory Engine (Read-only):** Connects via Google Drive API to scan folder hierarchies, file metadata, MIME types, creation/modification dates, and ownership without inspecting sensitive document payloads unnecessarily.
 4. **Gap Analysis Engine:** Evaluates the difference between the computed Required State and the scanned Observed State. Categorizes gaps into Missing, Outdated, Duplicated, or Unowned.
 5. **Compiler Module:** Executes approved additions. Writes structured folder hierarchy, initializes the Google Sheet Master Document Register, and creates drafted policies stamped with metadata.
