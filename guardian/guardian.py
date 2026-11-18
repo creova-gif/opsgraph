@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Company OS — Company Guardian Engine (v0.1)
+OpsGraph — Company Guardian Engine (v0.1)
 Continuous background governance and drift monitoring agent.
 Observes workspace state, flags unindexed files, identifies expired policy review dates,
 detects unowned documents and duplicate collisions, and generates the weekly Company Health Digest.
@@ -302,7 +302,7 @@ def format_health_digest_markdown(digest: HealthDigest) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Company OS Guardian Monitoring Engine")
+    parser = argparse.ArgumentParser(description="OpsGraph Guardian Monitoring Engine")
     parser.add_argument("profile", help="Path to company profile JSON")
     parser.add_argument("inventory", help="Path to workspace inventory JSON")
     parser.add_argument("--register", default=None, help="Optional path to master register CSV or JSON")

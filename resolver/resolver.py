@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Company OS — State Resolver Engine (v0.2)
+OpsGraph — State Resolver Engine (v0.2)
 Deterministic required-state evaluation engine.
 Maps a company profile (schema/company-profile.schema.json) against codified
 operating graph rules (rules/core-artifacts.json) to compute required artifacts,
@@ -302,7 +302,7 @@ class StateResolver:
 
 def format_markdown(report: ResolutionReport) -> str:
     lines = [
-        f"# Company OS Required State Report: {report.company_name}",
+        f"# OpsGraph Required State Report: {report.company_name}",
         f"",
         f"> **Stage:** {report.stage.upper()} | **Headcount:** {report.employee_count} | **Triggers:** {', '.join(report.triggers) if report.triggers else 'None'}",
         f"> **Total Evaluated:** {report.total_evaluated} artifacts",
@@ -353,7 +353,7 @@ def format_markdown(report: ResolutionReport) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Company OS State Resolver Engine")
+    parser = argparse.ArgumentParser(description="OpsGraph State Resolver Engine")
     parser.add_argument("profile", help="Path to company profile JSON file")
     parser.add_argument("--rules", default=None, help="Path to custom core-artifacts.json rules")
     parser.add_argument("--format", choices=["markdown", "json"], default="markdown", help="Output format")

@@ -58,5 +58,5 @@ flowchart TD
 | **P0** | **Gap Analysis Engine** | **Completed** | Markdown & JSON output comparing required vs observed artifacts; computes 0–100% Company Infrastructure Score in `gap_engine/analyzer.py`. |
 | **P1** | **Compiler Execution** | **Completed** | Idempotent compiler creating 12 canonical folders, Master Register (CSV/JSON), and governed templates with provenance headers in `compiler/compiler.py`. |
 | **P1** | **Company Guardian Prototype** | **Completed** | Continuous background drift engine detecting unowned files, stale reviews, and collisions; outputs weekly Health Digest in `guardian/guardian.py`. |
-| **P1** | **End-to-End Demo Runner** | **Completed** | 7-moment live simulation runner (`bin/company-os demo` / `demo/run_demo.py`) matching YC demo script. |
+| **P1** | **End-to-End Demo Runner** | **Completed** | 7-moment live simulation runner (`bin/opsgraph demo` / `demo/run_demo.py`) matching YC demo script. |
 | **P2** | **Slack / Email Digest** | Backlog | Weekly digest to founder highlighting pending operational items and drift warnings. |

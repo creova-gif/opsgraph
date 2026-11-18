@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "company-os/company-profile/v0.1",
+  "$id": "opsgraph/company-profile/v0.1",
   "title": "Company Profile (onboarding output)",
   "description": "Facts that determine which operating-system artifacts a company requires. Every answer is versioned and carries provenance.",
   "type": "object",

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for Company OS Gap Analysis Engine.
+Unit tests for OpsGraph Gap Analysis Engine.
 Verifies gap detection, staleness calculation, duplicate collision detection,
 domain score rollups, and overall Company Infrastructure Score calculation.
 """

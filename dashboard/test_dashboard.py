@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for Company OS Interactive Dashboard Generator.
+Unit tests for OpsGraph Interactive Dashboard Generator.
 Verifies HTML compilation, metric data injection, and output integrity.
 """
 
@@ -28,7 +28,7 @@ class TestDashboardGenerator(unittest.TestCase):
         inventory_path = self.base_dir / "examples" / "sample-drive-inventory.json"
         self.inventory = self.scanner.load_snapshot(inventory_path)
 
-        self.temp_dir = tempfile.mkdtemp(prefix="company_os_dashboard_test_")
+        self.temp_dir = tempfile.mkdtemp(prefix="opsgraph_dashboard_test_")
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir, ignore_errors=True)
@@ -46,7 +46,7 @@ class TestDashboardGenerator(unittest.TestCase):
 
         # Verify key UI components in rendered HTML
         self.assertIn("Acme Cloud Technologies, Inc.", html)
-        self.assertIn("Company OS Beta", html)
+        self.assertIn("OpsGraph Beta", html)
         self.assertIn("svg-dial", html)
         self.assertIn("29.9%", html)  # Score dial
         self.assertIn("Immediate Deal & Due Diligence Blockers", html)

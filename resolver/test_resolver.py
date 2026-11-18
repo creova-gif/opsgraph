@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for Company OS State Resolver Engine.
+Unit tests for OpsGraph State Resolver Engine.
 Tests deterministic condition evaluation, topological sorting, and owner mapping.
 """
 

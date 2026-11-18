@@ -460,7 +460,7 @@ Offer
 Why it fits
 Priority
 Founder direct
-48-hour Company OS installation
+48-hour OpsGraph installation
 Fastest learning; captures language and objections
 P0
 Accelerators
@@ -551,7 +551,7 @@ Track decisions; convert repeated judgments into rules
 12. MVP: What to Build and What Not to Build
 12.1 Concierge MVP before software
 Recruit 3–5 external startups that are not merely friends or internal ventures.
-Charge $750–$1,500 for a 48-hour or 5-day Company OS installation.
+Charge $750–$1,500 for a 48-hour or 5-day OpsGraph installation.
 Use one fixed onboarding form and one versioned core taxonomy.
 Deliver the implementation manually with agent assistance.
 Log every judgment call, exception, repeated question, template substitution and founder objection.
@@ -581,7 +581,7 @@ Autonomous policy/legal edits
 
 13. Three Cheapest Validation Experiments
 13.1 Experiment 1 — Sell before building
-Offer a paid “48-Hour Company OS Installation” to five startups. The success metric is paid conversion, not survey enthusiasm.
+Offer a paid “48-Hour OpsGraph Installation” to five startups. The success metric is paid conversion, not survey enthusiasm.
 Metric
 Pass signal
 Initial outreach → qualified calls
@@ -792,7 +792,7 @@ Strong; urgency-driven
 Operating intelligence
 “Know what your company is missing before it becomes a problem.”
 Strong; agent/graph aligned
-Company OS
+OpsGraph
 “Install the system your company runs on — in your existing workspace.”
 Strong but category education required
 Template automation

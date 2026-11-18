@@ -1,4 +1,4 @@
-# 48-Hour Company OS Installation — Pilot Offer One-Pager
+# 48-Hour OpsGraph Installation — Pilot Offer One-Pager
 
 > **Target Audience:** Seed & Series A B2B Founders, COOs, and Engineering Leaders on Google Workspace.  
 > **The Problem:** You built the product, but internal company infrastructure is scattered across personal drives, old templates, and founder heads. An enterprise deal, fundraise due diligence, or SOC 2 questionnaire requires immediate organization—without pausing engineering for two weeks.
@@ -47,7 +47,7 @@ We install an enterprise-ready operating system directly inside the Google Works
 
 ---
 
-## 4. What Company OS Is Not
+## 4. What OpsGraph Is Not
 
 * **Not a migration:** You do not leave Google Workspace or learn a new tool like Notion. Everything lives in your native Drive.
 * **Not a legal opinion or audit certification:** We compile and organize readiness evidence; we never assert unilateral compliance.

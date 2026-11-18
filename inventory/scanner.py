@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Company OS — Workspace Inventory Scanner (v0.1)
+OpsGraph — Workspace Inventory Scanner (v0.1)
 Read-only metadata scanner for Google Workspace / Local Drive.
 Inventories file names, folder structures, modification dates, and owners
 without reading sensitive document bodies unnecessarily.
@@ -216,7 +216,7 @@ class WorkspaceScanner:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Company OS Workspace Inventory Scanner")
+    parser = argparse.ArgumentParser(description="OpsGraph Workspace Inventory Scanner")
     parser.add_argument("--snapshot", help="Path to existing JSON inventory snapshot")
     parser.add_argument("--local", help="Path to local folder simulating drive to index")
     parser.add_argument("--output", help="Optional output JSON path")

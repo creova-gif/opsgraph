@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Company OS — Gap Analysis Engine (v0.1)
+OpsGraph — Gap Analysis Engine (v0.1)
 Compares Required State (from State Resolver) against Observed State (from Workspace Inventory).
 Detects missing, stale, duplicated, unowned, and misplaced artifacts.
 Calculates the explainable Company Infrastructure Score (0-100%).
@@ -250,7 +250,7 @@ class GapAnalyzer:
 
 def format_gap_markdown(report: GapReport) -> str:
     lines = [
-        f"# Company OS Gap Analysis & Infrastructure Report",
+        f"# OpsGraph Gap Analysis & Infrastructure Report",
         f"",
         f"**Company:** {report.company_name}  ",
         f"**Audit Snapshot Date:** {report.scanned_at}  ",
@@ -341,7 +341,7 @@ def _render_progress_bar(pct: float, width: int = 10) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Company OS Gap Analysis Engine")
+    parser = argparse.ArgumentParser(description="OpsGraph Gap Analysis Engine")
     parser.add_argument("profile", help="Path to company profile JSON")
     parser.add_argument("inventory", help="Path to scanned workspace inventory JSON")
     parser.add_argument("--format", choices=["markdown", "json"], default="markdown", help="Output format")

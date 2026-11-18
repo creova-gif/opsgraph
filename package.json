@@ -1,5 +1,5 @@
 {
-  "name": "company-os",
+  "name": "opsgraph",
   "version": "0.2.0",
   "description": "Turns a startup's existing Google Workspace into an AI-maintained company operating system.",
   "scripts": {
@@ -8,8 +8,8 @@
     "gap": "python3 gap_engine/analyzer.py",
     "compile": "python3 compiler/compiler.py",
     "guardian": "python3 guardian/guardian.py",
-    "dashboard": "python3 company_os_cli.py dashboard examples/seed-b2b-saas.json examples/sample-drive-inventory.json --output dashboard/index.html",
-    "serve": "python3 company_os_cli.py serve",
+    "dashboard": "python3 opsgraph_cli.py dashboard examples/seed-b2b-saas.json examples/sample-drive-inventory.json --output dashboard/index.html",
+    "serve": "python3 opsgraph_cli.py serve",
     "demo": "python3 demo/run_demo.py",
     "test": "python3 -m unittest discover -s . -p 'test_*.py'"
   }

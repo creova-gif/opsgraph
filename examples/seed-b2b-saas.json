@@ -49,7 +49,7 @@
   "permissions": {
     "read_metadata": true,
     "read_content_roots": ["Operations", "Sales"],
-    "create_roots": ["Company OS"],
+    "create_roots": ["OpsGraph"],
     "move_rename": "propose_only"
   }
 }

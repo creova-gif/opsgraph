@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Company OS — Google Drive Inventory Source (v0.1)
+OpsGraph — Google Drive Inventory Source (v0.1)
 Read-only adapter that inventories Google Workspace Drive metadata
 (file names, folder structure, owners, timestamps, sizes) into the
 normalized InventorySnapshot consumed by every downstream engine.

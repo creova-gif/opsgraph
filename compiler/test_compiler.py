@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for Company OS Workspace Compiler.
+Unit tests for OpsGraph Workspace Compiler.
 Tests plan generation, dry-run mode, physical compilation, Master Document Register
 instantiation, provenance metadata tags, and idempotency.
 """
@@ -31,7 +31,7 @@ class TestWorkspaceCompiler(unittest.TestCase):
         self.inventory = self.scanner.load_snapshot(inventory_path)
 
         # Temporary workspace target directory
-        self.temp_dir = tempfile.mkdtemp(prefix="company_os_test_")
+        self.temp_dir = tempfile.mkdtemp(prefix="opsgraph_test_")
 
     def tearDown(self):
         shutil.rmtree(self.temp_dir, ignore_errors=True)
@@ -85,7 +85,7 @@ class TestWorkspaceCompiler(unittest.TestCase):
 
         with open(access_reg, "r", encoding="utf-8") as f:
             content = f.read()
-            self.assertIn("COMPANY OS GOVERNED OPERATIONAL ARTIFACT", content)
+            self.assertIn("OPSGRAPH GOVERNED OPERATIONAL ARTIFACT", content)
             self.assertIn("Canonical Identifier : ES-001", content)
             self.assertIn("Accountable Owner    : CTO", content)
             self.assertIn("Acme Cloud Technologies, Inc.", content)

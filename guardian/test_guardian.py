@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Unit tests for Company OS Guardian Monitoring Engine.
+Unit tests for OpsGraph Guardian Monitoring Engine.
 Tests unindexed file detection, unowned file alerts, policy staleness tracking,
 version collision detection, and health score calculation.
 """

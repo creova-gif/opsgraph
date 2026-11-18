@@ -1,5 +1,5 @@
 # Core required-state rules, v0.2 Operating Graph Node Schema.
-# Conforms to Section 16 of the Company OS Strategy Brief.
+# Conforms to Section 16 of the OpsGraph Strategy Brief.
 # Each artifact is a governed node in the Operating Graph.
 # requirement levels: required | recommended | optional | not_applicable
 # Never encode a legal or certification claim here; these are operational best practice.

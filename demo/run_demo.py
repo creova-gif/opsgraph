@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Company OS — End-to-End Live Demo Runner
+OpsGraph — End-to-End Live Demo Runner
 Implements the 7-moment demo sequence from Section 9 of the YC Application Playbook.
 Designed for recording a crisp, 2-minute YC application video.
 """
@@ -102,7 +102,7 @@ def run_full_demo():
     # -------------------------------------------------------------
     # Moment 5: Compile
     # -------------------------------------------------------------
-    temp_target = tempfile.mkdtemp(prefix="company_os_demo_")
+    temp_target = tempfile.mkdtemp(prefix="opsgraph_demo_")
     print_banner(5, "Compile Approved Infrastructure", "Concrete execution, not consulting slides")
     print(f"⚙️  Executing idempotent compiler to: {temp_target}")
 

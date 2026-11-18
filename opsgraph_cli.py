@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Company OS — Unified Command Line Interface
+OpsGraph — Unified Command Line Interface
 The complete AI-maintained company operating system toolkit.
 Executes State Resolution, Workspace Inventory, Gap Analysis, Drive Compilation,
 and Guardian Continuous Monitoring.
@@ -206,8 +206,8 @@ def cmd_demo(args):
 
 def main():
     parser = argparse.ArgumentParser(
-        prog="company-os",
-        description="Company OS — Turns a startup's Google Workspace into an AI-maintained operating system.",
+        prog="opsgraph",
+        description="OpsGraph — Turns a startup's Google Workspace into an AI-maintained operating system.",
     )
     subparsers = parser.add_subparsers(dest="subcommand", help="Available subcommands")
 

@@ -1,5 +1,5 @@
 VENTURE BUILD SYSTEM
-YC Application Preparation Playbook — Company OS
+YC Application Preparation Playbook — OpsGraph
 Winter 2027 application sprint: traction, narrative, demo, application and interview readiness
 Founder working document • Version 1.0 • October 2026
 Application objective
@@ -11,7 +11,7 @@ Today: turn Google Workspace into a startup’s AI-maintained operating system. 
 Application control
 Working answer
 Company
-Company OS (working name; replace when final)
+OpsGraph (working name; replace when final)
 One-liner
 We turn a startup’s existing Google Workspace into a complete, AI-maintained company operating system.
 Initial customer
@@ -26,7 +26,7 @@ At least 3 serious pilots targeted; ideally 1–3 paying customers; measurable b
 
 1. YC framing
 1.1 The story in one paragraph
-Startups build products first and reconstruct their internal operating infrastructure later—usually when an enterprise customer, investor, auditor, or hiring surge forces them to. Company OS connects to the workspace they already use, understands the company’s stage and context, identifies what operational infrastructure should exist, creates the approved missing structure and artifacts, and continuously monitors drift. We are starting with Google Workspace and B2B startups because the problem is acute and measurable there; the long-term product is a cross-platform operating graph for companies.
+Startups build products first and reconstruct their internal operating infrastructure later—usually when an enterprise customer, investor, auditor, or hiring surge forces them to. OpsGraph connects to the workspace they already use, understands the company’s stage and context, identifies what operational infrastructure should exist, creates the approved missing structure and artifacts, and continuously monitors drift. We are starting with Google Workspace and B2B startups because the problem is acute and measurable there; the long-term product is a cross-platform operating graph for companies.
 1.2 Why now
 AI makes it economically possible to reason over unstructured company documents and produce context-specific drafts, mappings and explanations.
 Workspaces and APIs make company state observable enough to build a maintenance loop rather than deliver a one-time consulting binder.
@@ -34,7 +34,7 @@ Agents are becoming common, which increases—not decreases—the need for a gov
 Enterprise buyers, investors and regulators continue to demand evidence, ownership and repeatable processes from startups earlier in their life.
 1.3 RFS alignment without force-fitting
 YC signal
-Relevant Company OS insight
+Relevant OpsGraph insight
 How to mention it
 AI-native compliance infrastructure
 Compliance can be one readiness view derived from company state
@@ -122,7 +122,7 @@ Founder decision
 
 6. Draft answer bank — adapt to exact YC form
 What are you making?
-We are building Company OS, software that turns an existing Google Workspace into a startup’s operating infrastructure. A founder connects their workspace and answers a structured onboarding. We inventory the current state, identify missing company infrastructure, generate and organize approved artifacts such as policies, registers, decision records and investor-readiness documents, and then monitor changes with an AI Company Guardian. The first users are B2B startups preparing for enterprise customers, fundraising or compliance.
+We are building OpsGraph, software that turns an existing Google Workspace into a startup’s operating infrastructure. A founder connects their workspace and answers a structured onboarding. We inventory the current state, identify missing company infrastructure, generate and organize approved artifacts such as policies, registers, decision records and investor-readiness documents, and then monitor changes with an AI Company Guardian. The first users are B2B startups preparing for enterprise customers, fundraising or compliance.
 Why did you pick this idea?
 I kept encountering the same problem while building and operating companies: the product gets built, but the company infrastructure stays scattered across drives and people’s heads until a customer, investor or audit forces cleanup. In a recent operating-system build I had to make dozens of repeated decisions about taxonomy, ownership, document numbering, missing evidence and what could safely be asserted. The pattern was systematic enough to turn into software.
 What do you understand that others do not?
@@ -233,7 +233,7 @@ Start with readiness; expand into shared company operating graph across function
 Why you?
 Firsthand operating pain + ability to build + speed of customer learning. Avoid a resume recital.
 What if Vanta expands?
-Compliance is one view; Company OS models general operating state. Still acknowledge that competitive encroachment is real.
+Compliance is one view; OpsGraph models general operating state. Still acknowledge that competitive encroachment is real.
 How accurate/safe is the agent?
 Explain provenance, approval gates, no autonomous compliance claims, audit trail and measured false positives.
 
@@ -347,7 +347,7 @@ Do not hide manual operations; explain how they teach you what to automate.
 Do not claim compliance/certification outcomes the product cannot verify.
 Do not write application answers like a pitch deck. Use short, factual, numerical language.
 18. Founder focus decision
-The biggest application risk is not competition; it is looking unfocused. If you apply with Company OS, your public/application narrative should make it clear that this is the company you are actively testing and building now. Other ventures can remain context or prior experience, but should not make the reviewer wonder which company receives your attention.
+The biggest application risk is not competition; it is looking unfocused. If you apply with OpsGraph, your public/application narrative should make it clear that this is the company you are actively testing and building now. Other ventures can remain context or prior experience, but should not make the reviewer wonder which company receives your attention.
 19. Submission readiness checklist
 Current YC deadline and batch details re-checked on the official application page.
 Company name/domain and founder details consistent across application, demo and website.

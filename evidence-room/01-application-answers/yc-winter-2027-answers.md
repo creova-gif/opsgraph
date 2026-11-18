@@ -1,8 +1,8 @@
-# YC Winter 2027 Application Answers — Company OS
+# YC Winter 2027 Application Answers — OpsGraph
 
 > **Application Status:** Working Draft (Sprint v1.0)  
 > **Target Batch:** Y Combinator Winter 2027  
-> **Source Documents:** `docs/strategy/Company_OS_YC_Application_Preparation_Playbook.txt`  
+> **Source Documents:** `docs/strategy/OpsGraph_YC_Application_Preparation_Playbook.txt`  
 > **Rule of Discipline:** Specific before broad • Evidence before assertion • Plain, factual, numerical answers • No jargon or pitch-deck fluff.
 
 ---
@@ -10,7 +10,7 @@
 ## 1. Company Basics
 
 ### Company Name
-**Company OS** *(working name; update upon incorporation/domain lock)*
+**OpsGraph** *(working name; update upon incorporation/domain lock)*
 
 ### One-line Description
 > We turn a startup's existing Google Workspace into a complete, AI-maintained company operating system.
@@ -18,7 +18,7 @@
 *(Alternative 50-character tight version if required: `AI-maintained operating system for Google Workspace.`)*
 
 ### Company URL
-`https://companyos.io` *(or current staging/landing URL)*
+`https://opsgraph.io` *(or current staging/landing URL)*
 
 ---
 
@@ -26,7 +26,7 @@
 
 ### Q1: What is your company going to make?
 **Draft Answer:**
-We are building Company OS, software that turns a startup's existing Google Workspace into an AI-maintained operating infrastructure. 
+We are building OpsGraph, software that turns a startup's existing Google Workspace into an AI-maintained operating infrastructure. 
 
 When a founder connects their Google Workspace and completes a structured onboarding profile, our system:
 1. **Inventories** the existing state (files, folders, permissions, document dates, ownership).
@@ -67,7 +67,7 @@ We have built and verified the complete end-to-end software loop for Google Work
 4. **Gap Analysis Engine:** Evaluates observed files against the required model, categorizing artifacts into 5 states (Present Current, Present Stale, Misplaced, Duplicate Collision, Missing) and calculating an explainable 0–100% Company Infrastructure Score.
 5. **Workspace Compiler:** Generates canonical numbered folder hierarchies (`00_Company_Control` through `99_Archive`), instantiates the Master Document Register (CSV/JSON), and stamps governed templates with provenance metadata and marked founder input placeholders.
 6. **Company Guardian:** Background monitoring engine detecting unindexed documents, unowned/contractor files, and expired policy review cadences, outputting a weekly Health Digest with 1-click remediation actions.
-7. **Test Suite & Demo:** 10 passing unit tests across all engines and an executable 7-moment live demo (`bin/company-os demo`). We are currently running concierge pilots with Seed/Series A B2B founders to refine rule edge cases.
+7. **Test Suite & Demo:** 10 passing unit tests across all engines and an executable 7-moment live demo (`bin/opsgraph demo`). We are currently running concierge pilots with Seed/Series A B2B founders to refine rule edge cases.
 
 ---
 
@@ -115,7 +115,7 @@ We acquire customers exclusively through **trigger-based outbound and channel pa
 ### Q9: Where will the company be based? What are the founders' commitments?
 **Draft Answer:**
 - **Location:** San Francisco, CA / Remote *(fill exact primary location)*.
-- **Commitment:** 100% full-time commitment on Company OS. We are not treating this as an incubator project or side venture; this is our sole operating company.
+- **Commitment:** 100% full-time commitment on OpsGraph. We are not treating this as an incubator project or side venture; this is our sole operating company.
 
 ---
 
@@ -125,4 +125,4 @@ Before submitting to the YC portal:
 - [ ] Re-verify exact numbers in Q4 & Q5 against `evidence-room/02-metrics/weekly-tracker.md`.
 - [ ] Record a 1-minute, unedited founder video answering: Who are you, what are you building, who is the user, and what is your traction? (No music, no pitch deck slides).
 - [ ] Confirm the 30-second one-liner passes the cold-stranger test.
-- [ ] Ensure no claim is made that Company OS "guarantees compliance" (we provide readiness and evidence compilation, not legal certification).
+- [ ] Ensure no claim is made that OpsGraph "guarantees compliance" (we provide readiness and evidence compilation, not legal certification).

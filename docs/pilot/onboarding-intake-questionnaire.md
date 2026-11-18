@@ -80,5 +80,5 @@
 * **How many hours does the leadership team lose when due diligence or audit requests arrive?** 
 
 ### 15. Safety & Change Boundaries
-* **What actions may the Company OS system perform automatically (e.g., file tagging, indexing, register updates)?** 
+* **What actions may the OpsGraph system perform automatically (e.g., file tagging, indexing, register updates)?** 
 * **What actions must strictly require human confirmation before execution (e.g., moving existing contracts, renaming folders, archiving)?** 

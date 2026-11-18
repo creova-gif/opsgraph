@@ -20,10 +20,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Syntax check
-        run: python -m compileall -q compiler dashboard demo gap_engine guardian inventory resolver company_os_cli.py
+        run: python -m compileall -q compiler dashboard demo gap_engine guardian inventory resolver opsgraph_cli.py
 
       - name: Unit tests
         run: python -m unittest discover -s . -p 'test_*.py'
 
       - name: Smoke — gap report on fixtures
-        run: python company_os_cli.py gap examples/seed-b2b-saas.json examples/sample-drive-inventory.json --format json > /tmp/gap.json && python -c "import json; r=json.load(open('/tmp/gap.json')); assert 0 <= r['infrastructure_score'] <= 100; print('score:', r['infrastructure_score'])"
+        run: python opsgraph_cli.py gap examples/seed-b2b-saas.json examples/sample-drive-inventory.json --format json > /tmp/gap.json && python -c "import json; r=json.load(open('/tmp/gap.json')); assert 0 <= r['infrastructure_score'] <= 100; print('score:', r['infrastructure_score'])"

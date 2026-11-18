@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Company OS — Interactive Visual Dashboard & HTML Report Generator (v0.1)
+OpsGraph — Interactive Visual Dashboard & HTML Report Generator (v0.1)
 Generates a standalone, dependency-free, interactive HTML executive dashboard
 representing a startup's operational infrastructure readiness, gap matrix,
 and active Guardian drift feed.
@@ -74,7 +74,7 @@ class DashboardGenerator:
         return html_content
 
     def _render_html(self, profile: Dict[str, Any], gap: Dict[str, Any], guardian: Dict[str, Any]) -> str:
-        comp_name = profile["company"].get("legal_name", "Company OS Client")
+        comp_name = profile["company"].get("legal_name", "OpsGraph Client")
         stage_str = profile["stage"].get("funding_stage", "Seed").upper()
         emp_count = profile["stage"].get("employee_count", 1)
         triggers_str = ", ".join(profile.get("triggers", []))
@@ -96,7 +96,7 @@ class DashboardGenerator:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{comp_name} — Company OS Readiness Dashboard</title>
+  <title>{comp_name} — OpsGraph Readiness Dashboard</title>
   <style>
     :root {{
       --bg-base: #0b0f19;
@@ -515,7 +515,7 @@ class DashboardGenerator:
       <div>
         <div class="brand-title">
           <span>{comp_name}</span>
-          <span class="brand-pill">Company OS Beta</span>
+          <span class="brand-pill">OpsGraph Beta</span>
         </div>
         <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
           Stage: <strong>{stage_str}</strong> ({emp_count} FTE) • Triggers: <strong>{triggers_str}</strong> • Audit Date: <strong>{scanned_date}</strong>
@@ -811,7 +811,7 @@ class DashboardGenerator:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Company OS HTML Dashboard Generator")
+    parser = argparse.ArgumentParser(description="OpsGraph HTML Dashboard Generator")
     parser.add_argument("profile", help="Path to company profile JSON")
     parser.add_argument("inventory", help="Path to workspace inventory JSON")
     parser.add_argument("--output", default="dashboard.html", help="Output HTML file path")

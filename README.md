@@ -1,4 +1,4 @@
-# Company OS
+# OpsGraph
 
 Turns a startup's existing Google Workspace into an AI-maintained company operating system.
 Required state (what should exist) is compared with observed state (what exists), approved gaps are

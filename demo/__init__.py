@@ -1,1 +1,1 @@
-"""Company OS demo package."""
+"""OpsGraph demo package."""

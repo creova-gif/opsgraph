@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# company-os launcher. Override the interpreter with COMPANY_OS_PYTHON.
+# opsgraph launcher. Override the interpreter with OPSGRAPH_PYTHON.
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PYTHON_BIN="${COMPANY_OS_PYTHON:-python3}"
+PYTHON_BIN="${OPSGRAPH_PYTHON:-python3}"
 if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
   for candidate in \
     "/Library/Frameworks/Python.framework/Versions/3.14/bin/python3" \
@@ -13,4 +13,4 @@ if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then
     fi
   done
 fi
-exec "$PYTHON_BIN" "$SCRIPT_DIR/company_os_cli.py" "$@"
+exec "$PYTHON_BIN" "$SCRIPT_DIR/opsgraph_cli.py" "$@"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Company OS — Workspace Compiler Engine (v0.1)
+OpsGraph — Workspace Compiler Engine (v0.1)
 Idempotent compiler that instantiates approved operating system infrastructure
 directly into a target workspace directory (or Google Drive destination).
 Creates canonical folder taxonomy, Master Document Register, and governed
@@ -273,7 +273,7 @@ class WorkspaceCompiler:
         return f"{co_artifact.root}_{self._sanitize_folder_name(co_artifact.root_name)}"
 
     def _generate_artifact_template(self, item: Dict[str, Any], profile: Dict[str, Any], timestamp: str) -> str:
-        company_name = profile.get("company", {}).get("legal_name", "Company OS Client")
+        company_name = profile.get("company", {}).get("legal_name", "OpsGraph Client")
         jurisdiction = profile.get("company", {}).get("incorporation_jurisdiction", "Delaware, USA")
         domain = profile.get("workspace", {}).get("domain", "company.io")
 
@@ -282,7 +282,7 @@ class WorkspaceCompiler:
 
         provenance_header = f"""<!--
 ================================================================================
-COMPANY OS GOVERNED OPERATIONAL ARTIFACT
+OPSGRAPH GOVERNED OPERATIONAL ARTIFACT
 ================================================================================
 Canonical Identifier : {item["id"]}
 Document Title       : {item["name"]}
@@ -385,7 +385,7 @@ To satisfy audit reviews for `{fw_str}`, the following evidence must be retained
 
 | Revision | Date | Author / Role | Changes Summary | Approved By |
 |:---:|:---:|---|---|:---:|
-| `v1.0` | `{timestamp[:10]}` | `{item["resolved_owner"]}` | Initial compiled draft via Company OS | `[PENDING_FOUNDER_SIGNOFF]` |
+| `v1.0` | `{timestamp[:10]}` | `{item["resolved_owner"]}` | Initial compiled draft via OpsGraph | `[PENDING_FOUNDER_SIGNOFF]` |
 """
 
         return provenance_header + content_body + provenance_footer
@@ -401,7 +401,7 @@ To satisfy audit reviews for `{fw_str}`, the following evidence must be retained
 
 def format_plan_markdown(plan: CompilationPlan) -> str:
     lines = [
-        f"# Company OS Workspace Compilation Plan",
+        f"# OpsGraph Workspace Compilation Plan",
         f"",
         f"**Target Company:** {plan.company_name}  ",
         f"**Target Directory:** `{plan.target_directory}`  ",
@@ -446,7 +446,7 @@ def format_plan_markdown(plan: CompilationPlan) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Company OS Workspace Compiler")
+    parser = argparse.ArgumentParser(description="OpsGraph Workspace Compiler")
     parser.add_argument("profile", help="Path to company profile JSON")
     parser.add_argument("--inventory", default=None, help="Path to scanned workspace inventory JSON")
     parser.add_argument("--target", default="./workspace_compiled", help="Target output directory")

@@ -1,9 +1,9 @@
 VENTURE BUILD SYSTEM
-Company OS — Venture Execution Blueprint
+OpsGraph — Venture Execution Blueprint
 From concierge proof to AI-native company infrastructure platform
 Founder working document • Version 1.0 • October 2026
 Core thesis
-Startups build products before they build the company infrastructure required to scale, sell to enterprises, raise capital, hire, and satisfy compliance demands. Company OS installs that missing infrastructure inside the workspace the company already uses, then continuously keeps it complete, current, owned, and auditable.
+Startups build products before they build the company infrastructure required to scale, sell to enterprises, raise capital, hire, and satisfy compliance demands. OpsGraph installs that missing infrastructure inside the workspace the company already uses, then continuously keeps it complete, current, owned, and auditable.
 
 Recommended v1
 Do not build “any industry, any stack, any geography” in v1. Start with 5–50 person B2B technology startups using Google Workspace, especially those approaching enterprise sales, fundraising, SOC 2 readiness, or rapid hiring. Build the architecture to expand later.
@@ -11,7 +11,7 @@ Do not build “any industry, any stack, any geography” in v1. Start with 5–
 Document control
 Value
 Purpose
-Single execution source of truth for building, validating, launching, and evolving Company OS.
+Single execution source of truth for building, validating, launching, and evolving OpsGraph.
 Founder decision
 Proceed as a concierge-first, Google-Workspace-first B2B SaaS venture.
 Primary customer
@@ -26,14 +26,14 @@ Prove paid demand, repeatability, measurable operational improvement, and a narr
 
 1. Venture definition
 1.1 One-line definition
-Company OS turns a startup’s existing workspace into a complete, AI-maintained operating system.
+OpsGraph turns a startup’s existing workspace into a complete, AI-maintained operating system.
 1.2 Customer promise
-Keep the tools the company already uses; Company OS installs structure rather than forcing a workspace migration.
+Keep the tools the company already uses; OpsGraph installs structure rather than forcing a workspace migration.
 Know what operational artifacts should exist for the company’s stage, industry, geography, team, commercial situation, and target standards.
 Generate and organize missing company infrastructure with explicit human approval and provenance.
 Continuously detect missing, outdated, duplicated, ownerless, contradictory, or misplaced artifacts.
 Produce readiness views for fundraising, enterprise sales, onboarding, security/compliance, audits, and internal scaling.
-1.3 What Company OS is not
+1.3 What OpsGraph is not
 Not a generic document generator or template marketplace.
 Not a replacement for Google Workspace, Microsoft 365, Notion, or SharePoint.
 Not a legal opinion, audit attestation, certification authority, or automated claim that a company is compliant.
@@ -42,7 +42,7 @@ Not an open-ended autonomous agent with unrestricted write access; risky actions
 2. Problem architecture
 Observed startup failure mode
 Business consequence
-Company OS response
+OpsGraph response
 Documents scattered across personal/team drives
 Slow due diligence; institutional knowledge loss
 Canonical taxonomy, inventory, classification and ownership
@@ -217,7 +217,7 @@ Customer geographies, employee geographies, data residency concerns
 Brand
 Logo, colors, typography, voice; brand kit file if available
 Risk controls
-What Company OS may read, propose, create, move, rename or never modify without approval
+What OpsGraph may read, propose, create, move, rename or never modify without approval
 
 8. Core artifact library
 Pack
@@ -319,7 +319,7 @@ V1 motion
 Asset
 Founder network
 Direct founder outreach around a trigger
-48-hour Company OS Assessment
+48-hour OpsGraph Assessment
 Accelerators/incubators
 Portfolio/cohort installation
 Cohort readiness report + founder dashboard
@@ -341,7 +341,7 @@ Screenshots, anonymized case studies, benchmark reports
 Category
 Examples
 Do not compete on
-Company OS wedge
+OpsGraph wedge
 Compliance automation
 Vanta, Drata, Secureframe
 Framework evidence automation alone

@@ -52,5 +52,5 @@
 - Built Workspace Metadata Scanner (`inventory/`) and Gap Analysis Engine (`gap_engine/`) with 0–100% Infrastructure Scoring.
 - Built Workspace Compiler (`compiler/`) with dry-run preview, 12 canonical roots, Master Document Register generation, and template stubs with provenance metadata.
 - Built Company Guardian (`guardian/`) with drift detection (unindexed files, stale reviews, unowned docs, duplicate collisions) and weekly Health Digest.
-- Built unified CLI (`bin/company-os`) and end-to-end 7-moment live demo runner (`demo/run_demo.py`).
+- Built unified CLI (`bin/opsgraph`) and end-to-end 7-moment live demo runner (`demo/run_demo.py`).
 - 10 automated unit tests passing across all engines (100% test coverage).

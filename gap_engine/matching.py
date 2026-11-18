@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Company OS — Shared Artifact/File Matching Utilities
+OpsGraph — Shared Artifact/File Matching Utilities
 Canonical ID/name/alias matching used by both the Gap Analyzer and the
 Company Guardian. All matching is phrase-boundary aware so short aliases
 (e.g. "sop", "bcp") cannot match inside unrelated words ("esop", "taco 001").

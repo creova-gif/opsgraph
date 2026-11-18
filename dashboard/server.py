@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Company OS — Local Dashboard Preview Server
+OpsGraph — Local Dashboard Preview Server
 Serves the generated interactive HTML dashboard on localhost for beta testing.
 """
 
@@ -56,7 +56,7 @@ def serve_dashboard(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Serve Company OS Dashboard")
+    parser = argparse.ArgumentParser(description="Serve OpsGraph Dashboard")
     parser.add_argument("--profile", default="examples/seed-b2b-saas.json")
     parser.add_argument("--inventory", default="examples/sample-drive-inventory.json")
     parser.add_argument("--port", type=int, default=8080)
