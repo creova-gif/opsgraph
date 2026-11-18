@@ -16,7 +16,8 @@ Core loop: `Company Profile -> Required State -> Workspace Inventory -> Gap Repo
 - `store/` - SQLite (WAL) persistence: versioned, schema-validated profiles (`profile save|list|show`), engine-run history (`--record` + `history`), and an approval decision ledger (`approve`/`approvals`)
 - `gap_engine/` - required-vs-observed gap analysis engine & infrastructure scoring
 - `compiler/` - workspace compiler: creates folder taxonomy, Master Register, and governed templates
-- `guardian/` - company guardian: weekly drift monitoring, policy staleness, and health digest
+- `guardian/` - company guardian: weekly drift monitoring, policy staleness, and health digest; `--propose` emits remediation proposals per drift event via consul-core
+- `integrations/` - consul-core v1 client seam: HTTP client (bearer token, `OPSGRAPH_CONSUL_TOKEN`) + deterministic local simulation fallback
 - `dashboard/` - interactive visual HTML dashboard & local preview server
 - `docs/pilot/` - concierge pilot offer one-pager, 20-step delivery checklist, intake form
 - `docs/strategy/` - viability brief, execution blueprint, YC playbook (source of truth for decisions)

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import webbrowser
 from dataclasses import asdict
@@ -25,6 +26,7 @@ from dashboard.server import serve_dashboard
 from demo.run_demo import run_full_demo
 from gap_engine.analyzer import GapAnalyzer, format_gap_markdown
 from guardian.guardian import CompanyGuardian, format_health_digest_markdown, load_register_entries
+from integrations.consul import ConsulClient, ConsulUnavailable, HTTPConsulClient, StubConsulClient
 from inventory.drive_source import GoogleDriveSource, merge_delta
 from inventory.scanner import LocalDirectorySource, SnapshotSource, WorkspaceScanner
 from resolver.resolver import StateResolver, format_markdown
@@ -287,6 +289,13 @@ def cmd_compile(args):
         )
 
 
+def _consul_client(args) -> ConsulClient:
+    """HTTP client when --consul-url is set, else the deterministic local stub."""
+    if args.consul_url:
+        return HTTPConsulClient(args.consul_url, os.environ.get("OPSGRAPH_CONSUL_TOKEN", ""))
+    return StubConsulClient()
+
+
 def cmd_guardian(args):
     profile_path = Path(args.profile)
     with open(profile_path, "r", encoding="utf-8") as f:
@@ -306,13 +315,45 @@ def cmd_guardian(args):
         master_register_entries=register_entries,
     )
 
+    proposals = []
+    if args.propose:
+        client = _consul_client(args)
+        company_id = company_id_for(profile_data)
+        for i, event in enumerate(digest.events):
+            key = f"{company_id}-{event.category}-{event.affected_file or event.affected_artifact_id or event.event_id or i}"
+            try:
+                result = client.run_agent("guardian-remediation", inputs=asdict(event),
+                                          company_id=company_id, idempotency_key=key)
+            except ConsulUnavailable as e:
+                sys.stderr.write(f"Consul unavailable ({e}); falling back to local simulation\n")
+                client = StubConsulClient()
+                result = client.run_agent("guardian-remediation", inputs=asdict(event),
+                                          company_id=company_id, idempotency_key=key)
+            proposals.append({
+                "run_id": result.run_id,
+                "skill": "guardian-remediation",
+                "simulation": result.simulation,
+                "provider": result.provider,
+                "event_type": event.category,
+                "output": result.output,
+            })
+
     if args.format == "json":
         print(json.dumps(asdict(digest), indent=2))
     else:
         print(format_health_digest_markdown(digest))
+        if proposals:
+            print("\n## Remediation proposals")
+            for p, event in zip(proposals, digest.events):
+                tag = "[simulation]" if p["simulation"] else "[real]"
+                target = event.affected_file or event.affected_artifact_id or event.event_id
+                print(f"{tag} {target}: {str(p['output'].get('proposal', ''))[:100]}")
 
+    payload = asdict(digest)
+    if args.propose:
+        payload["proposals"] = proposals
     _record_run(
-        args, "guardian", asdict(digest),
+        args, "guardian", payload,
         summary=f"health={digest.health_score}% events={digest.total_drift_events}",
         profile_data=profile_data,
     )
@@ -493,6 +534,10 @@ def main():
     p_guardian.add_argument("inventory", help="Path to workspace inventory JSON")
     p_guardian.add_argument("--register", default=None, help="Optional Master Register JSON")
     p_guardian.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p_guardian.add_argument("--propose", action="store_true",
+                            help="Request a remediation proposal per drift event via consul-core (guardian-remediation skill)")
+    p_guardian.add_argument("--consul-url", default=None,
+                            help="consul-core base URL; unset uses the deterministic local simulation")
     p_guardian.add_argument("--record", action="store_true", help="Persist this run to the store")
     p_guardian.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_guardian.set_defaults(func=cmd_guardian)
