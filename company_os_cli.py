@@ -11,6 +11,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import webbrowser
+from dataclasses import asdict
 from pathlib import Path
 
 # Ensure project root is in sys.path
@@ -18,9 +20,13 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
 from compiler.compiler import WorkspaceCompiler, format_plan_markdown
+from dashboard.generator import DashboardGenerator
+from dashboard.server import serve_dashboard
+from demo.run_demo import run_full_demo
 from gap_engine.analyzer import GapAnalyzer, format_gap_markdown
-from guardian.guardian import CompanyGuardian, format_health_digest_markdown
-from inventory.scanner import WorkspaceScanner
+from guardian.guardian import CompanyGuardian, format_health_digest_markdown, load_register_entries
+from inventory.drive_source import GoogleDriveSource
+from inventory.scanner import LocalDirectorySource, SnapshotSource, WorkspaceScanner
 from resolver.resolver import StateResolver, format_markdown
 
 
@@ -37,31 +43,41 @@ def cmd_resolve(args):
     report = resolver.resolve(profile_data)
 
     if args.format == "json":
-        from dataclasses import asdict
         print(json.dumps(asdict(report), indent=2))
     else:
         print(format_markdown(report))
 
 
 def cmd_scan(args):
-    scanner = WorkspaceScanner()
-    if args.snapshot:
+    if args.drive:
+        if not args.credentials:
+            sys.stderr.write(
+                "Error: --drive requires --credentials <client_secret|service_account>.json\n"
+            )
+            sys.exit(1)
+        source = GoogleDriveSource(
+            credentials_path=Path(args.credentials),
+            token_path=Path(args.token) if args.token else None,
+            impersonate=args.impersonate,
+            domain=args.domain,
+        )
+        snapshot = source.scan()
+    elif args.snapshot:
         snap_path = Path(args.snapshot)
         if not snap_path.exists():
             sys.stderr.write(f"Snapshot not found: {snap_path}\n")
             sys.exit(1)
-        snapshot = scanner.load_snapshot(snap_path)
+        snapshot = SnapshotSource(snap_path).scan()
     elif args.local:
         loc_path = Path(args.local)
         if not loc_path.exists():
             sys.stderr.write(f"Local directory not found: {loc_path}\n")
             sys.exit(1)
-        snapshot = scanner.scan_local_directory(loc_path)
+        snapshot = LocalDirectorySource(loc_path, domain=args.domain).scan()
     else:
         default_snap = BASE_DIR / "examples" / "sample-drive-inventory.json"
-        snapshot = scanner.load_snapshot(default_snap)
+        snapshot = SnapshotSource(default_snap).scan()
 
-    from dataclasses import asdict
     data = asdict(snapshot)
 
     if args.output:
@@ -95,7 +111,6 @@ def cmd_gap(args):
     gap_report = analyzer.analyze(resolution, inventory_snapshot)
 
     if args.format == "json":
-        from dataclasses import asdict
         print(json.dumps(asdict(gap_report), indent=2))
     else:
         print(format_gap_markdown(gap_report))
@@ -148,10 +163,7 @@ def cmd_guardian(args):
 
     register_entries = None
     if args.register:
-        reg_path = Path(args.register)
-        if reg_path.suffix == ".json":
-            with open(reg_path, "r", encoding="utf-8") as f:
-                register_entries = json.load(f)
+        register_entries = load_register_entries(Path(args.register))
 
     guardian = CompanyGuardian()
     digest = guardian.audit(
@@ -161,15 +173,12 @@ def cmd_guardian(args):
     )
 
     if args.format == "json":
-        from dataclasses import asdict
         print(json.dumps(asdict(digest), indent=2))
     else:
         print(format_health_digest_markdown(digest))
 
 
 def cmd_dashboard(args):
-    from dashboard.generator import DashboardGenerator
-
     profile_path = Path(args.profile)
     with open(profile_path, "r", encoding="utf-8") as f:
         profile_data = json.load(f)
@@ -183,18 +192,15 @@ def cmd_dashboard(args):
     print(f"📊 Interactive Dashboard generated at: {out_path}")
 
     if args.open:
-        import webbrowser
         webbrowser.open(f"file://{out_path}")
 
 
 def cmd_serve(args):
-    from dashboard.server import serve_dashboard
     serve_dashboard(args.profile, args.inventory, port=args.port, host=args.host)
 
 
 def cmd_demo(args):
     # Delegate to demo runner
-    from demo.run_demo import run_full_demo
     run_full_demo()
 
 
@@ -215,6 +221,11 @@ def main():
     p_scan = subparsers.add_parser("scan", help="Scan workspace metadata without reading sensitive content")
     p_scan.add_argument("--snapshot", help="Path to JSON inventory snapshot")
     p_scan.add_argument("--local", help="Path to local folder simulating drive")
+    p_scan.add_argument("--drive", action="store_true", help="Scan a real Google Drive via the Drive API (read-only metadata)")
+    p_scan.add_argument("--credentials", help="OAuth client_secret or service_account JSON for --drive")
+    p_scan.add_argument("--token", help="Cached OAuth token path for --drive (created on first run)")
+    p_scan.add_argument("--impersonate", help="Workspace admin user for service-account domain delegation")
+    p_scan.add_argument("--domain", default="local", help="Workspace domain label recorded in scan metadata")
     p_scan.add_argument("--output", help="Optional output JSON path")
     p_scan.set_defaults(func=cmd_scan)
 

@@ -128,6 +128,7 @@ class StateResolver:
             reasons: List[str] = [f"Base default: {default_level}"]
 
             overrides = req_block.get("overrides", [])
+            matched_overrides: List[Tuple[str, str]] = []
             for ovr in overrides:
                 condition = ovr.get("when", {})
                 target_level = ovr.get("level", default_level)
@@ -139,9 +140,20 @@ class StateResolver:
                     regulated_activities=regulated_activities,
                 )
                 if matched:
-                    # If this condition elevates or specifies the level
-                    active_level = target_level
-                    reasons.append(f"Override applied: {cond_reason} -> {target_level}")
+                    matched_overrides.append((cond_reason, target_level))
+
+            if matched_overrides:
+                # First matching override wins; the rest are reported so rule
+                # authors can see and resolve ordering conflicts.
+                active_level = matched_overrides[0][1]
+                reasons.append(f"Override applied: {matched_overrides[0][0]} -> {active_level}")
+                if len(matched_overrides) > 1:
+                    conflicts = "; ".join(
+                        f"{r} -> {l}" for r, l in matched_overrides[1:]
+                    )
+                    reasons.append(
+                        f"Conflicting override(s) ignored by first-match precedence: {conflicts}"
+                    )
 
             final_reason = "; ".join(reasons)
 

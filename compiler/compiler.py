@@ -151,6 +151,8 @@ class WorkspaceCompiler:
 
         target_path = Path(target_dir).resolve()
         now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        resolution = self.resolver.resolve(profile_data)
+        co_folder = self._master_register_folder(resolution)
 
         if dry_run:
             return CompilationResult(
@@ -161,7 +163,7 @@ class WorkspaceCompiler:
                 folders_created=plan.folders_to_create,
                 artifacts_created=[a["rel_path"] for a in plan.artifacts_to_compile],
                 audit_log_path=str(target_path / "compiler_audit_log.json"),
-                master_register_path=str(target_path / "00_Company_Control" / "CO-001_Master_Document_Register.csv"),
+                master_register_path=str(target_path / co_folder / "CO-001_Master_Document_Register.csv"),
             )
 
         # Execute physical creation
@@ -175,13 +177,12 @@ class WorkspaceCompiler:
             fld_path.mkdir(parents=True, exist_ok=True)
             created_folders.append(fld)
 
-        # 2. Instantiate Master Document Register in 00_Company_Control
-        co_dir = target_path / "00_Company_Control"
+        # 2. Instantiate Master Document Register in the CO-001 root folder
+        co_dir = target_path / co_folder
         co_dir.mkdir(parents=True, exist_ok=True)
         master_reg_csv = co_dir / "CO-001_Master_Document_Register.csv"
         master_reg_json = co_dir / "CO-001_Master_Document_Register.json"
 
-        resolution = self.resolver.resolve(profile_data)
         register_rows = []
         for art in resolution.artifacts:
             # Determine lifecycle status
@@ -221,7 +222,7 @@ class WorkspaceCompiler:
         with open(master_reg_json, "w", encoding="utf-8") as f:
             json.dump(register_rows, f, indent=2)
 
-        created_artifacts.append("00_Company_Control/CO-001_Master_Document_Register.csv")
+        created_artifacts.append(f"{co_folder}/CO-001_Master_Document_Register.csv")
 
         # 3. Compile Artifact Templates
         for item in plan.artifacts_to_compile:
@@ -263,6 +264,13 @@ class WorkspaceCompiler:
             audit_log_path=str(audit_path),
             master_register_path=str(master_reg_csv),
         )
+
+    def _master_register_folder(self, resolution: ResolutionReport) -> str:
+        """Folder that hosts the Master Document Register, derived from CO-001's taxonomy root."""
+        co_artifact = next((a for a in resolution.artifacts if a.id == "CO-001"), None)
+        if co_artifact is None:
+            return "00_Company_Control"
+        return f"{co_artifact.root}_{self._sanitize_folder_name(co_artifact.root_name)}"
 
     def _generate_artifact_template(self, item: Dict[str, Any], profile: Dict[str, Any], timestamp: str) -> str:
         company_name = profile.get("company", {}).get("legal_name", "Company OS Client")

@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "company-os"
+version = "0.2.0"
+description = "Turns a startup's existing Google Workspace into an AI-maintained company operating system."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+
+[project.optional-dependencies]
+drive = [
+    "google-api-python-client>=2.100.0",
+    "google-auth-oauthlib>=1.2.0",
+    "google-auth>=2.30.0",
+]
+
+[project.scripts]
+company-os = "company_os_cli:main"
+
+[tool.setuptools]
+py-modules = ["company_os_cli"]
+packages = ["compiler", "dashboard", "demo", "gap_engine", "guardian", "inventory", "resolver"]
+
+# NOTE: rules/, schema/, and examples/ are loaded relative to the source tree,
+# so use `pip install -e .` (editable) for development. Wheel installs will not
+# carry those data directories yet.

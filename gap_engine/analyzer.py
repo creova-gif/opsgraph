@@ -11,52 +11,17 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
-import re
 import sys
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 # Ensure project root is in sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from inventory.scanner import InventorySnapshot, WorkspaceFile, WorkspaceScanner
-from resolver.resolver import ResolutionReport, ResolvedArtifact, StateResolver
-
-# Artifact alias dictionary for fuzzy semantic matching against unstructured file names
-ARTIFACT_ALIASES: Dict[str, List[str]] = {
-    "CO-001": ["master document register", "master register", "document index", "document register"],
-    "CO-002": ["document control procedure", "document control policy", "document standard"],
-    "CO-003": ["company profile", "pitch deck", "company overview", "venture profile"],
-    "CO-004": ["ownership matrix", "raci matrix", "raci", "roles and responsibilities"],
-    "CO-005": ["policy register", "policy index", "policy list"],
-    "GV-001": ["decision record log", "decision record", "decision log", "adr log"],
-    "GV-002": ["risk register", "risk assessment", "risk log"],
-    "GV-003": ["weekly leadership agenda", "leadership sync", "weekly sync notes", "leadership agenda"],
-    "GV-004": ["monthly operating review", "operating review", "monthly mor"],
-    "GV-005": ["annual objectives", "company okrs", "annual goals", "annual priorities"],
-    "FN-001": ["vendor register", "vendor list", "software subscriptions", "vendor inventory"],
-    "FN-002": ["approval matrix", "spending limits", "signature authority", "delegation of authority"],
-    "FN-003": ["investor update template", "investor update", "investor newsletter", "investor report"],
-    "FN-004": ["data room index", "data room", "due diligence index", "diligence checklist"],
-    "FN-005": ["procurement checklist", "vendor onboarding checklist", "purchasing procedure"],
-    "PE-001": ["hiring checklist", "interview checklist", "recruiting checklist"],
-    "PE-002": ["onboarding checklist", "new hire onboarding", "employee onboarding"],
-    "PE-003": ["offboarding checklist", "employee offboarding", "exit checklist", "termination checklist"],
-    "PE-004": ["role charter template", "role charter", "job description template"],
-    "PE-005": ["training register", "security training log", "compliance training log"],
-    "ES-001": ["access register", "user access review", "access list", "system access log"],
-    "ES-002": ["incident record template", "incident record", "incident postmortem", "post-mortem template", "postmortem"],
-    "ES-003": ["change record template", "change record", "production change log", "rfc template"],
-    "ES-004": ["architecture decision record template", "architecture decision record", "adr template"],
-    "ES-005": ["security review calendar", "security calendar", "audit schedule"],
-    "SC-001": ["customer security request tracker", "customer security faq", "caiq", "sig", "vsq answers", "security questionnaire"],
-    "SC-002": ["contract obligations register", "contract register", "customer obligations", "sla register"],
-    "SC-003": ["evidence index", "audit evidence index", "soc2 evidence", "controls evidence"],
-    "OP-001": ["sop template", "standard operating procedure", "sop"],
-    "OP-002": ["business continuity plan", "bcp", "disaster recovery plan", "dr plan"],
-    "LG-001": ["policy gap report", "compliance gap report", "readiness report"],
-}
+from gap_engine.matching import find_matching_files
+from inventory.scanner import InventorySnapshot, WorkspaceScanner
+from resolver.resolver import ResolutionReport, StateResolver
 
 CRITICALITY_WEIGHTS = {"high": 3, "medium": 2, "low": 1}
 
@@ -134,7 +99,7 @@ class GapAnalyzer:
                     "missing_critical": 0,
                 }
 
-            matched = self._find_matching_files(art, inventory.files)
+            matched = find_matching_files(art, inventory.files)
             weight = CRITICALITY_WEIGHTS.get(art.criticality, 1)
 
             if art.level == "required":
@@ -271,42 +236,16 @@ class GapAnalyzer:
             items=gap_items,
         )
 
-    def _find_matching_files(self, art: ResolvedArtifact, files: List[WorkspaceFile]) -> List[WorkspaceFile]:
-        matches: List[WorkspaceFile] = []
-        art_id_clean = art.id.lower()
-        art_name_clean = self._normalize(art.name)
-        aliases = ARTIFACT_ALIASES.get(art.id, [])
-
-        for f in files:
-            fname_clean = self._normalize(f.name)
-            # Direct ID match
-            if art_id_clean in fname_clean:
-                matches.append(f)
-                continue
-            # Direct name match
-            if art_name_clean in fname_clean:
-                matches.append(f)
-                continue
-            # Alias substring match
-            for alias in aliases:
-                if self._normalize(alias) in fname_clean:
-                    matches.append(f)
-                    break
-
-        return matches
-
-    def _normalize(self, text: str) -> str:
-        text = text.lower()
-        text = re.sub(r"[^a-z0-9]+", " ", text)
-        return text.strip()
-
     def _parse_iso(self, dt_str: str) -> Optional[datetime.datetime]:
         if not dt_str:
             return None
         try:
-            return datetime.datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+            dt = datetime.datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
         except ValueError:
             return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt
 
 
 def format_gap_markdown(report: GapReport) -> str:

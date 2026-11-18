@@ -11,8 +11,8 @@ Core loop: `Company Profile -> Required State -> Workspace Inventory -> Gap Repo
 
 ## Layout
 - `evidence-room/` - YC application preparation evidence room (answers, metrics, demo, interviews)
-- `resolver/` - deterministic state resolver engine (Python & TypeScript) + test suite
-- `inventory/` - read-only workspace metadata inventory scanner
+- `resolver/` - deterministic state resolver engine (Python) + test suite
+- `inventory/` - read-only workspace metadata scanner: local trees, JSON snapshots, and real Google Drive via `scan --drive` (read-only `drive.metadata.readonly` scope; optional `[drive]` extra)
 - `gap_engine/` - required-vs-observed gap analysis engine & infrastructure scoring
 - `compiler/` - workspace compiler: creates folder taxonomy, Master Register, and governed templates
 - `guardian/` - company guardian: weekly drift monitoring, policy staleness, and health digest
@@ -30,7 +30,7 @@ dump templates - never claim compliance. Delete is never allowed in v1.
 
 ## Backlog & Execution Status
 - [x] **Resolver (P0):** Profile + rules -> required artifact list with reasons and topological order (`resolver/`)
-- [x] **Drive Inventory Prototype (P1):** Read-only metadata scanner for Google Workspace & local trees (`inventory/`)
+- [x] **Drive Inventory (P1):** Read-only metadata scanner — real Google Drive API (OAuth installed-app or service account, `drive.metadata.readonly`), JSON snapshots & local trees (`inventory/`)
 - [x] **Gap Analysis Engine (P1):** Required vs observed diff, domain scorecards, and 0-100% Infrastructure Score (`gap_engine/`)
 - [x] **Workspace Compiler Prototype (P1):** Dry-run preview, folder taxonomy, Master Register sheet, and template stubs with provenance (`compiler/`)
 - [x] **Company Guardian Prototype (P2):** Continuous drift detection, staleness alerts, duplicate collisions, and weekly Health Digest (`guardian/`)

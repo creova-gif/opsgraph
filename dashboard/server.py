@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import http.server
+import json
 import os
 import socketserver
 import sys
@@ -35,7 +36,6 @@ def serve_dashboard(
     out_html = BASE_DIR / "dashboard" / "index.html"
 
     with open(p_path, "r", encoding="utf-8") as f:
-        import json
         profile = json.load(f)
 
     inv = scanner.load_snapshot(i_path)

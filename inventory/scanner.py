@@ -15,7 +15,7 @@ import os
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 
 @dataclass
@@ -44,6 +44,40 @@ class InventorySnapshot:
     scan_metadata: Dict[str, Any]
     folders: List[WorkspaceFolder]
     files: List[WorkspaceFile]
+
+
+@runtime_checkable
+class WorkspaceSource(Protocol):
+    """Contract for workspace inventory providers.
+
+    Every source — local directory walks, exported snapshots, or a future
+    Google Drive API adapter — must yield a normalized `InventorySnapshot`.
+    Downstream engines (gap analysis, compiler, guardian) depend only on the
+    snapshot shape, so a real Drive source can drop in without touching them.
+    """
+
+    def scan(self) -> "InventorySnapshot": ...
+
+
+class LocalDirectorySource:
+    """Adapts a local filesystem tree into a workspace inventory."""
+
+    def __init__(self, root_dir: Path, domain: str = "local"):
+        self.root_dir = root_dir
+        self.domain = domain
+
+    def scan(self) -> "InventorySnapshot":
+        return WorkspaceScanner().scan_local_directory(self.root_dir, domain=self.domain)
+
+
+class SnapshotSource:
+    """Adapts an exported inventory JSON file into a workspace inventory."""
+
+    def __init__(self, snapshot_path: Path):
+        self.snapshot_path = snapshot_path
+
+    def scan(self) -> "InventorySnapshot":
+        return WorkspaceScanner().load_snapshot(self.snapshot_path)
 
 
 class WorkspaceScanner:

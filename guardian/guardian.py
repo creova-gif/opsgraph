@@ -9,20 +9,20 @@ detects unowned documents and duplicate collisions, and generates the weekly Com
 from __future__ import annotations
 
 import argparse
+import csv
 import datetime
 import json
-import re
 import sys
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 # Ensure project root is in sys.path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from gap_engine.analyzer import ARTIFACT_ALIASES, GapAnalyzer
-from inventory.scanner import InventorySnapshot, WorkspaceFile, WorkspaceScanner
-from resolver.resolver import ResolutionReport, ResolvedArtifact, StateResolver
+from gap_engine.matching import find_matching_files
+from inventory.scanner import InventorySnapshot, WorkspaceScanner
+from resolver.resolver import StateResolver
 
 
 @dataclass
@@ -149,7 +149,7 @@ class CompanyGuardian:
 
         # 5. Check for Policy Review Cadence Expirations & Collisions across Governed Artifacts
         for art in resolution.artifacts:
-            matched_files = self._find_matching_files(art, inventory.files)
+            matched_files = find_matching_files(art, inventory.files)
 
             if len(matched_files) > 1:
                 events.append(
@@ -222,38 +222,28 @@ class CompanyGuardian:
             action_queue=action_queue,
         )
 
-    def _find_matching_files(self, art: ResolvedArtifact, files: List[WorkspaceFile]) -> List[WorkspaceFile]:
-        matches: List[WorkspaceFile] = []
-        art_id_clean = art.id.lower()
-        art_name_clean = self._normalize(art.name)
-        aliases = ARTIFACT_ALIASES.get(art.id, [])
-
-        for f in files:
-            fname_clean = self._normalize(f.name)
-            if art_id_clean in fname_clean:
-                matches.append(f)
-                continue
-            if art_name_clean in fname_clean:
-                matches.append(f)
-                continue
-            for alias in aliases:
-                if self._normalize(alias) in fname_clean:
-                    matches.append(f)
-                    break
-        return matches
-
-    def _normalize(self, text: str) -> str:
-        text = text.lower()
-        text = re.sub(r"[^a-z0-9]+", " ", text)
-        return text.strip()
-
     def _parse_iso(self, dt_str: Optional[str]) -> Optional[datetime.datetime]:
         if not dt_str:
             return None
         try:
-            return datetime.datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
+            dt = datetime.datetime.fromisoformat(dt_str.replace("Z", "+00:00"))
         except ValueError:
             return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt
+
+
+def load_register_entries(reg_path: Path) -> List[Dict[str, Any]]:
+    """Load Master Document Register entries from JSON or CSV output by the compiler."""
+    suffix = reg_path.suffix.lower()
+    if suffix == ".json":
+        with open(reg_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    if suffix == ".csv":
+        with open(reg_path, "r", newline="", encoding="utf-8") as f:
+            return list(csv.DictReader(f))
+    raise ValueError(f"Unsupported register format '{suffix}' (expected .json or .csv): {reg_path}")
 
 
 def format_health_digest_markdown(digest: HealthDigest) -> str:
@@ -330,10 +320,7 @@ def main():
 
     register_entries = None
     if args.register:
-        reg_path = Path(args.register)
-        if reg_path.suffix == ".json":
-            with open(reg_path, "r", encoding="utf-8") as f:
-                register_entries = json.load(f)
+        register_entries = load_register_entries(Path(args.register))
 
     guardian = CompanyGuardian()
     digest = guardian.audit(

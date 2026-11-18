@@ -1,0 +1,29 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Syntax check
+        run: python -m compileall -q compiler dashboard demo gap_engine guardian inventory resolver company_os_cli.py
+
+      - name: Unit tests
+        run: python -m unittest discover -s . -p 'test_*.py'
+
+      - name: Smoke — gap report on fixtures
+        run: python company_os_cli.py gap examples/seed-b2b-saas.json examples/sample-drive-inventory.json --format json > /tmp/gap.json && python -c "import json; r=json.load(open('/tmp/gap.json')); assert 0 <= r['infrastructure_score'] <= 100; print('score:', r['infrastructure_score'])"

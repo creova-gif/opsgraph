@@ -89,6 +89,49 @@ class TestStateResolver(unittest.TestCase):
         self.assertEqual(gv004.level, "required")
         self.assertIn("Headcount 38 >= 20", gv004.reason)
 
+    def test_first_match_override_precedence(self):
+        """When multiple overrides match, the first wins and the rest are
+        surfaced as ignored conflicts in the reason."""
+        import tempfile
+
+        rules = {
+            "taxonomy_roots": {"00": "Company Control"},
+            "artifacts": [{
+                "id": "T-001",
+                "name": "Test Artifact",
+                "root": "00",
+                "type": "record",
+                "criticality": "high",
+                "owner_role": "founder",
+                "review_cadence_days": 90,
+                "requirement": {
+                    "default": "recommended",
+                    "overrides": [
+                        {"when": {"stage_gte": "seed"}, "level": "optional"},
+                        {"when": {"employees_gte": 1}, "level": "required"},
+                    ],
+                },
+            }],
+        }
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".json", delete=False, encoding="utf-8"
+        ) as f:
+            json.dump(rules, f)
+            rules_path = Path(f.name)
+
+        resolver = StateResolver(rules_path=rules_path)
+        report = resolver.resolve({
+            "company": {"legal_name": "Test Co"},
+            "stage": {"funding_stage": "seed", "employee_count": 10},
+            "triggers": [],
+            "functions": [],
+        })
+        art = report.artifacts[0]
+        self.assertEqual(art.level, "optional")  # first override wins
+        self.assertIn("Override applied", art.reason)
+        self.assertIn("ignored by first-match precedence", art.reason)
+        self.assertIn("required", art.reason)  # the losing level is still visible
+
     def test_determinism_across_runs(self):
         profile_path = self.base_dir / "examples" / "seed-b2b-saas.json"
         with open(profile_path, "r", encoding="utf-8") as f:
