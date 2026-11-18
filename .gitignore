@@ -19,3 +19,4 @@ workspace_target/
 workspace_demo/
 tmp/
 *.log
+.claude/skills/gstack/
