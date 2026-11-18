@@ -40,7 +40,19 @@ CREATE TABLE IF NOT EXISTS profile_versions (
     saved_at TEXT NOT NULL,
     PRIMARY KEY (company_id, version)
 );
+
+CREATE TABLE IF NOT EXISTS runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    company_id TEXT NOT NULL REFERENCES companies(company_id),
+    run_type TEXT NOT NULL,
+    summary TEXT,
+    payload TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_runs_company ON runs(company_id, run_type, created_at);
 """
+
+RUN_TYPES = {"scan", "resolve", "gap", "compile", "guardian"}
 
 
 def company_id_for(profile: Dict[str, Any]) -> str:
@@ -123,6 +135,75 @@ class ProfileStore:
             (company_id,),
         ).fetchall()
         return [{"version": r[0], "saved_at": r[1], "schema_id": r[2]} for r in rows]
+
+    def save_run(
+        self,
+        company_id: str,
+        run_type: str,
+        payload: Dict[str, Any],
+        summary: str = "",
+    ) -> int:
+        """Persist an engine run (scan/gap/compile/guardian) for a company.
+
+        The company must already exist — runs always hang off a versioned
+        profile so history is anchored to a known entity.
+        """
+        if run_type not in RUN_TYPES:
+            raise ValueError(f"unknown run_type '{run_type}' (expected one of {sorted(RUN_TYPES)})")
+        exists = self.conn.execute(
+            "SELECT 1 FROM companies WHERE company_id = ?", (company_id,)
+        ).fetchone()
+        if not exists:
+            raise ValueError(f"no company '{company_id}' in store — save a profile first")
+        with self.conn:
+            cur = self.conn.execute(
+                "INSERT INTO runs (company_id, run_type, summary, payload, created_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    company_id,
+                    run_type,
+                    summary,
+                    json.dumps(payload, sort_keys=True, default=str),
+                    datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                ),
+            )
+        return cur.lastrowid
+
+    def list_runs(
+        self,
+        company_id: Optional[str] = None,
+        run_type: Optional[str] = None,
+        limit: int = 20,
+    ) -> List[Dict[str, Any]]:
+        q = "SELECT id, company_id, run_type, summary, created_at FROM runs"
+        clauses, params = [], []
+        if company_id:
+            clauses.append("company_id = ?")
+            params.append(company_id)
+        if run_type:
+            clauses.append("run_type = ?")
+            params.append(run_type)
+        if clauses:
+            q += " WHERE " + " AND ".join(clauses)
+        q += " ORDER BY id DESC LIMIT ?"
+        params.append(limit)
+        rows = self.conn.execute(q, params).fetchall()
+        return [
+            {"id": r[0], "company_id": r[1], "run_type": r[2], "summary": r[3], "created_at": r[4]}
+            for r in rows
+        ]
+
+    def get_run(self, run_id: int) -> Optional[Dict[str, Any]]:
+        row = self.conn.execute(
+            "SELECT id, company_id, run_type, summary, payload, created_at FROM runs WHERE id = ?",
+            (run_id,),
+        ).fetchone()
+        if not row:
+            return None
+        return {
+            "id": row[0], "company_id": row[1], "run_type": row[2],
+            "summary": row[3], "payload": json.loads(row[4]), "created_at": row[5],
+        }
 
     def close(self) -> None:
         self.conn.close()

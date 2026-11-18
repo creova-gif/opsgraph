@@ -28,7 +28,24 @@ from guardian.guardian import CompanyGuardian, format_health_digest_markdown, lo
 from inventory.drive_source import GoogleDriveSource, merge_delta
 from inventory.scanner import LocalDirectorySource, SnapshotSource, WorkspaceScanner
 from resolver.resolver import StateResolver, format_markdown
-from store.store import DEFAULT_DB_PATH, ProfileStore
+from store.store import DEFAULT_DB_PATH, ProfileStore, company_id_for
+
+
+def _record_run(args, run_type: str, payload: dict, summary: str, profile_data: dict) -> None:
+    """Persist an engine run when --record is passed. Derives company_id the
+    same way profile save does, so history stays anchored to one entity."""
+    if not getattr(args, "record", False):
+        return
+    company_id = company_id_for(profile_data)
+    db_path = Path(getattr(args, "db", None) or DEFAULT_DB_PATH)
+    store = ProfileStore(db_path)
+    try:
+        run_id = store.save_run(company_id, run_type, payload, summary)
+        print(f"run recorded: #{run_id} ({run_type}, {company_id}) -> {db_path}")
+    except ValueError as e:
+        sys.stderr.write(f"run not recorded: {e}\n")
+    finally:
+        store.close()
 
 
 def cmd_resolve(args):
@@ -176,6 +193,12 @@ def cmd_gap(args):
     else:
         print(format_gap_markdown(gap_report))
 
+    _record_run(
+        args, "gap", asdict(gap_report),
+        summary=f"score={gap_report.infrastructure_score}% missing={gap_report.missing_count}",
+        profile_data=profile_data,
+    )
+
 
 def cmd_compile(args):
     profile_path = Path(args.profile)
@@ -213,6 +236,12 @@ def cmd_compile(args):
         print(f"   Master Register  : {result.master_register_path}")
         print(f"   Audit Log        : {result.audit_log_path}")
 
+        _record_run(
+            args, "compile", asdict(result),
+            summary=f"register_v{result.register_version} artifacts={len(result.artifacts_created)}",
+            profile_data=profile_data,
+        )
+
 
 def cmd_guardian(args):
     profile_path = Path(args.profile)
@@ -237,6 +266,34 @@ def cmd_guardian(args):
         print(json.dumps(asdict(digest), indent=2))
     else:
         print(format_health_digest_markdown(digest))
+
+    _record_run(
+        args, "guardian", asdict(digest),
+        summary=f"health={digest.health_score}% events={digest.total_drift_events}",
+        profile_data=profile_data,
+    )
+
+
+def cmd_history(args):
+    db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
+    store = ProfileStore(db_path)
+    try:
+        if args.run_id is not None:
+            run = store.get_run(args.run_id)
+            if run is None:
+                sys.stderr.write(f"Error: no run #{args.run_id} in {db_path}\n")
+                sys.exit(1)
+            print(json.dumps(run, indent=2))
+            return
+        runs = store.list_runs(
+            company_id=args.company_id, run_type=args.type, limit=args.limit
+        )
+        if not runs:
+            print("No runs recorded yet.")
+        for r in runs:
+            print(f"#{r['id']}  {r['created_at'][:19]}  {r['company_id']}  {r['run_type']}  {r['summary']}")
+    finally:
+        store.close()
 
 
 def cmd_dashboard(args):
@@ -310,6 +367,8 @@ def main():
     p_gap.add_argument("profile", help="Path to company profile JSON")
     p_gap.add_argument("inventory", help="Path to workspace inventory JSON")
     p_gap.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p_gap.add_argument("--record", action="store_true", help="Persist this run to the store")
+    p_gap.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_gap.set_defaults(func=cmd_gap)
 
     # compile
@@ -319,6 +378,8 @@ def main():
     p_compile.add_argument("--target", default="./workspace_compiled", help="Target output folder")
     p_compile.add_argument("--dry-run", action="store_true", help="Preview plan without writing")
     p_compile.add_argument("--approve", nargs="+", help="Specific artifact IDs to compile")
+    p_compile.add_argument("--record", action="store_true", help="Persist this run to the store")
+    p_compile.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_compile.set_defaults(func=cmd_compile)
 
     # guardian
@@ -327,7 +388,18 @@ def main():
     p_guardian.add_argument("inventory", help="Path to workspace inventory JSON")
     p_guardian.add_argument("--register", default=None, help="Optional Master Register JSON")
     p_guardian.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p_guardian.add_argument("--record", action="store_true", help="Persist this run to the store")
+    p_guardian.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_guardian.set_defaults(func=cmd_guardian)
+
+    # history
+    p_hist = subparsers.add_parser("history", help="List recorded engine runs from the store")
+    p_hist.add_argument("--company-id", default=None, help="Filter by company")
+    p_hist.add_argument("--type", choices=["scan", "resolve", "gap", "compile", "guardian"], default=None)
+    p_hist.add_argument("--run-id", type=int, default=None, help="Print a single run payload")
+    p_hist.add_argument("--limit", type=int, default=20)
+    p_hist.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
+    p_hist.set_defaults(func=cmd_history)
 
     # dashboard
     p_dash = subparsers.add_parser("dashboard", help="Generate single-file interactive HTML readiness dashboard")

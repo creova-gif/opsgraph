@@ -74,5 +74,41 @@ class TestProfileStore(unittest.TestCase):
         self.assertEqual(self.store.list_companies(), [])
 
 
+class TestRunHistory(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = Path(tempfile.mkdtemp(prefix="opsgraph_runs_"))
+        self.store = ProfileStore(self.temp_dir / "test.db")
+        cid, _ = self.store.save_profile(_valid_profile())
+        self.cid = cid
+
+    def tearDown(self):
+        self.store.close()
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def test_save_and_list_runs(self):
+        r1 = self.store.save_run(self.cid, "gap", {"score": 29.9}, "score=29.9%")
+        r2 = self.store.save_run(self.cid, "guardian", {"health": 88.0}, "health=88%")
+        self.assertEqual((r1, r2), (1, 2))
+
+        runs = self.store.list_runs(company_id=self.cid)
+        self.assertEqual([r["run_type"] for r in runs], ["guardian", "gap"])  # newest first
+
+        only_gap = self.store.list_runs(run_type="gap")
+        self.assertEqual(len(only_gap), 1)
+        self.assertEqual(only_gap[0]["summary"], "score=29.9%")
+
+        run = self.store.get_run(r1)
+        self.assertEqual(run["payload"]["score"], 29.9)
+        self.assertIsNone(self.store.get_run(999))
+
+    def test_run_requires_existing_company(self):
+        with self.assertRaises(ValueError):
+            self.store.save_run("ghost-co", "gap", {})
+
+    def test_run_type_validated(self):
+        with self.assertRaises(ValueError):
+            self.store.save_run(self.cid, "warp-drive", {})
+
+
 if __name__ == "__main__":
     unittest.main()
