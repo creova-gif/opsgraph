@@ -31,12 +31,19 @@ from resolver.resolver import StateResolver, format_markdown
 from store.store import DEFAULT_DB_PATH, ProfileStore, company_id_for
 
 
-def _record_run(args, run_type: str, payload: dict, summary: str, profile_data: dict) -> None:
-    """Persist an engine run when --record is passed. Derives company_id the
-    same way profile save does, so history stays anchored to one entity."""
+def _record_run(args, run_type: str, payload: dict, summary: str,
+                profile_data: dict = None, company_id: str = None) -> None:
+    """Persist an engine run when --record is passed. company_id comes from
+    the explicit override or derives from profile_data the same way
+    profile save does, so history stays anchored to one entity."""
     if not getattr(args, "record", False):
         return
-    company_id = company_id_for(profile_data)
+    company_id = company_id or getattr(args, "company_id", None)
+    if not company_id and profile_data is not None:
+        company_id = company_id_for(profile_data)
+    if not company_id:
+        sys.stderr.write("run not recorded: pass --company-id or a profile\n")
+        return
     db_path = Path(getattr(args, "db", None) or DEFAULT_DB_PATH)
     store = ProfileStore(db_path)
     try:
@@ -64,6 +71,12 @@ def cmd_resolve(args):
         print(json.dumps(asdict(report), indent=2))
     else:
         print(format_markdown(report))
+
+    _record_run(
+        args, "resolve", asdict(report),
+        summary=f"artifacts={len(report.artifacts)} required={sum(1 for a in report.artifacts if a.level == 'required')}",
+        profile_data=profile_data,
+    )
 
 
 def cmd_profile(args):
@@ -170,6 +183,11 @@ def cmd_scan(args):
             print(f"  - [{f.id}] {f.name} ({f.path})")
         if len(snapshot.files) > 10:
             print(f"  ... and {len(snapshot.files) - 10} more.")
+
+    _record_run(
+        args, "scan", data,
+        summary=f"files={len(snapshot.files)} folders={len(snapshot.folders)}",
+    )
 
 
 def cmd_gap(args):
@@ -397,6 +415,8 @@ def main():
     p_resolve = subparsers.add_parser("resolve", help="Deterministically evaluate required operating state")
     p_resolve.add_argument("profile", help="Path to company profile JSON")
     p_resolve.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p_resolve.add_argument("--record", action="store_true", help="Persist this run to the store")
+    p_resolve.add_argument("--db", default=None, help=f"SQLite DB path (default: {DEFAULT_DB_PATH})")
     p_resolve.set_defaults(func=cmd_resolve)
 
     # profile
@@ -424,6 +444,9 @@ def main():
     p_scan.add_argument("--domain", default="local", help="Workspace domain label recorded in scan metadata")
     p_scan.add_argument("--state", help="State file for incremental --drive scans (created on first run; tracks changes.list token)")
     p_scan.add_argument("--output", help="Optional output JSON path")
+    p_scan.add_argument("--record", action="store_true", help="Persist this run to the store")
+    p_scan.add_argument("--company-id", default=None, help="Company ID to record the scan against")
+    p_scan.add_argument("--db", default=None, help=f"SQLite DB path (default: {DEFAULT_DB_PATH})")
     p_scan.set_defaults(func=cmd_scan)
 
     # gap

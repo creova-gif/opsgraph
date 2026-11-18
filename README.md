@@ -20,6 +20,7 @@ Core loop: `Company Profile -> Required State -> Workspace Inventory -> Gap Repo
 - `dashboard/` - interactive visual HTML dashboard & local preview server
 - `docs/pilot/` - concierge pilot offer one-pager, 20-step delivery checklist, intake form
 - `docs/strategy/` - viability brief, execution blueprint, YC playbook (source of truth for decisions)
+- `docs/architecture/` - OpsGraph–Consul integration contract (`consul-core` v1 surface)
 - `schema/company-profile.schema.json` - onboarding output (P0)
 - `rules/core-artifacts.json` - Operating Graph node ruleset (JSON is the single canonical source), 31 governed artifacts + placement policy (v0.3)
 - `examples/` - sample profiles & drive inventories for testing (Seed, Pre-seed, Series A)
