@@ -231,6 +231,22 @@ a stamp hitting paper, a needle settling — never like SaaS micro-interactions.
 - Min body size 14px; data rows may go to 11px mono only where density is the
   point and content is non-prose.
 
+## 10a. Illustration & interactive instruments
+
+- On web surfaces, instruments may be live: isometric line-figures built with
+  `@lucasmarkes/hairline` — gauges, file cabinets, and registers that answer the
+  pointer. Line-art only; the figures are drawing, not chrome.
+- Print and static surfaces keep the same instruments as still line drawings.
+- Never photo illustration, 3D renders, or stock imagery — figures are always
+  drawn as objects being measured.
+
+## 10b. Voice (copy rules)
+
+- Measure, don't warn — "12 artifacts drifted", never "risk detected".
+- State, don't sell — the certificate certifies; it never argues.
+- Honest marks — anything simulated, pending, or previewed is tagged
+  `[SIMULATION]` and never animates.
+
 ## 11. Banned / never-ship list
 
 Purple in any role · gradients · glow/neon · near-black dark mode · pill
@@ -250,6 +266,8 @@ simulation markers · more than one accent in a component.
 | Readiness display | Gauge on marketing, numeral in product | User decision — dial where drama earns its place, quiet figure where the number is read daily |
 | Type stack | Cabinet Grotesk / Instrument Sans / JetBrains Mono | All free and verified loadable; replaces Claude Code's banned-display Fraunces and paid Söhne/Berkeley |
 | Light mode only | v1 | Kills the category's dark-glow temptation entirely |
+| Interactive figures | `@lucasmarkes/hairline` line-instruments on web | User suggestion — pointer-responsive line-art fits the instrument metaphor without adding chrome |
+| Paper brand kit | `OpsGraph — Brand Identity Kit` (5 boards) | Visual source of truth alongside this file; tokens sync both directions |
 
 *Researched: Vanta, Linear, Attio, Plain (Drata bot-walled). Category converges
 on dense vigilance marketing; nobody sells relief. OpsGraph's differentiator is
