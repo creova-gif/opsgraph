@@ -89,6 +89,7 @@ def plan_apply(
     plan: CompilationPlan,
     snapshot: InventorySnapshot,
     root_parent_id: str = "root",
+    include_register: bool = False,
 ) -> ApplyPlan:
     """Diff a CompilationPlan against the observed Drive state.
 
@@ -125,12 +126,44 @@ def plan_apply(
     for item in plan.artifacts_to_compile:
         art_id = item["id"]
         if art_id == "CO-001":
-            # The Master Document Register is a CSV/JSON compile output, not a
-            # markdown template — it stays a local compile artifact for now.
-            skipped.append({
-                "kind": "file", "name": item["filename"], "artifact_id": art_id,
-                "reason": "register is produced by local compile; Drive upload deferred",
-            })
+            # The Master Document Register is CSV/JSON compile output, not a
+            # markdown template. Uploaded when include_register is set;
+            # create-only means an existing register is never overwritten —
+            # the store's compile run remains the version of record.
+            if not include_register:
+                skipped.append({
+                    "kind": "file", "name": item["filename"], "artifact_id": art_id,
+                    "reason": "register is produced by local compile; pass include_register to upload",
+                })
+                continue
+            reg_folder = item["root_folder"]
+            reg_folder_id = existing_roots.get(reg_folder)
+            existing_reg = None
+            if reg_folder_id is not None:
+                existing_reg = next(
+                    (
+                        f for f in snapshot.files
+                        if f.parent_id == reg_folder_id
+                        and f.name.startswith("CO-001_Master_Document_Register")
+                    ),
+                    None,
+                )
+            if existing_reg is not None:
+                skipped.append({
+                    "kind": "file", "name": existing_reg.name, "artifact_id": art_id,
+                    "reason": f"register already present in {reg_folder} (id {existing_reg.id}); create-only apply never overwrites",
+                })
+            else:
+                files_to_create.append({
+                    "name": "CO-001_Master_Document_Register.csv",
+                    "artifact_id": art_id, "root_folder": reg_folder,
+                    "content_key": "register_csv", "mime_type": "text/csv",
+                })
+                files_to_create.append({
+                    "name": "CO-001_Master_Document_Register.json",
+                    "artifact_id": art_id, "root_folder": reg_folder,
+                    "content_key": "register_json", "mime_type": "application/json",
+                })
             continue
         root_folder = item["root_folder"]
         folder_id = existing_roots.get(root_folder)
@@ -175,6 +208,8 @@ def execute_apply(
 ) -> ApplyResult:
     """Execute an ApplyPlan through a create-only backend.
 
+    content_fn(spec) renders content for each file spec — artifact specs
+    carry spec["item"]; register specs carry spec["content_key"].
     Every create is recorded in the audit log alongside the skips
     computed at plan time — the before/after trail for the compile run.
     """
@@ -195,13 +230,14 @@ def execute_apply(
 
     for spec in apply_plan.files_to_create:
         parent_id = folder_ids[spec["root_folder"]]
-        content = content_fn(spec["item"])
-        new_id = backend.create_file(spec["name"], parent_id, content, artifact_mime)
+        content = content_fn(spec)
+        mime = spec.get("mime_type", artifact_mime)
+        new_id = backend.create_file(spec["name"], parent_id, content, mime)
         files_created.append(spec["name"])
         audit.append({
             "action": "create_file", "name": spec["name"],
             "artifact_id": spec["artifact_id"], "parent_id": parent_id,
-            "new_id": new_id, "mime_type": artifact_mime,
+            "new_id": new_id, "mime_type": mime,
         })
 
     for entry in apply_plan.skipped:

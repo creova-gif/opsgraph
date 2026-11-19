@@ -58,8 +58,8 @@ def _plan():
     )
 
 
-def _content(item):
-    return f"# {item['id']} template body"
+def _content(spec):
+    return f"# {spec['item']['id']} template body"
 
 
 class TestPlanApply(unittest.TestCase):
@@ -93,6 +93,37 @@ class TestPlanApply(unittest.TestCase):
         self.assertEqual(
             [s["artifact_id"] for s in ap.skipped if s["kind"] == "file"], ["CO-001"]
         )
+
+    def test_register_upload_planned_when_enabled(self):
+        plan = _plan()
+        plan.artifacts_to_compile.append(
+            {"id": "CO-001", "filename": "CO-001_Master_Document_Register.md",
+             "root_folder": "00_Company_Control"}
+        )
+        ap = plan_apply(plan, _snapshot(), include_register=True)
+        reg = [s for s in ap.files_to_create if s["artifact_id"] == "CO-001"]
+        self.assertEqual(
+            {(s["content_key"], s["mime_type"]) for s in reg},
+            {("register_csv", "text/csv"), ("register_json", "application/json")},
+        )
+        self.assertTrue(all(s["root_folder"] == "00_Company_Control" for s in reg))
+
+    def test_existing_register_never_overwritten(self):
+        plan = _plan()
+        plan.artifacts_to_compile.append(
+            {"id": "CO-001", "filename": "CO-001_Master_Document_Register.md",
+             "root_folder": "00_Company_Control"}
+        )
+        snap = _snapshot(
+            folders=[_folder("rootfld", "My Drive", None),
+                     _folder("fld1", "00_Company_Control", "rootfld")],
+            files=[_file("reg1", "CO-001_Master_Document_Register.csv", "fld1")],
+        )
+        ap = plan_apply(plan, snap, include_register=True)
+        reg_skips = [s for s in ap.skipped if s["artifact_id"] == "CO-001"]
+        self.assertEqual(len(reg_skips), 1)
+        self.assertIn("never overwrites", reg_skips[0]["reason"])
+        self.assertFalse(any(s["artifact_id"] == "CO-001" for s in ap.files_to_create))
 
     def test_nested_same_name_folder_does_not_count(self):
         # 00_Company_Control nested under another folder is not top-level

@@ -189,6 +189,109 @@ class WorkspaceCompiler:
         prior_version, prior_rows = self._load_prior_register(master_reg_json)
         compilation_id = f"comp-{int(datetime.datetime.now().timestamp())}"
 
+        built = self.build_register(
+            resolution, plan, profile_data, prior_version, prior_rows,
+            now_iso, compilation_id,
+        )
+        register_rows = built["rows"]
+        register_version = built["version"]
+        provenance = built["provenance"]
+
+        # Write CSV
+        master_reg_csv.write_text(self.render_register_csv(register_rows), encoding="utf-8")
+
+        # Write JSON — object envelope with provenance + versioned entries
+        master_reg_json.write_text(
+            json.dumps(
+                self.render_register_json(register_rows, register_version, provenance, now_iso),
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+
+        created_artifacts.append(f"{co_folder}/CO-001_Master_Document_Register.csv")
+
+        # 3. Compile Artifact Templates
+        for item in plan.artifacts_to_compile:
+            # If it's CO-001, we already created the CSV and JSON above
+            if item["id"] == "CO-001":
+                continue
+
+            file_dest = target_path / item["rel_path"]
+            content = self._generate_artifact_template(item, profile_data, now_iso)
+            with open(file_dest, "w", encoding="utf-8") as f:
+                f.write(content)
+            created_artifacts.append(item["rel_path"])
+
+        # 4. Write Immutable Audit Log
+        audit_log = {
+            "compilation_id": compilation_id,
+            "executed_at": now_iso,
+            "company_name": plan.company_name,
+            "target_directory": str(target_path),
+            "ruleset_version": self.resolver.rules_data.get("version", "0.2"),
+            "register_version": register_version,
+            "register_provenance": provenance,
+            "total_folders_created": len(created_folders),
+            "total_artifacts_compiled": len(created_artifacts),
+            "created_folders": created_folders,
+            "created_artifacts": created_artifacts,
+            "skipped_existing": plan.skipped_existing,
+        }
+
+        audit_path = target_path / "compiler_audit_log.json"
+        with open(audit_path, "w", encoding="utf-8") as f:
+            json.dump(audit_log, f, indent=2)
+
+        return CompilationResult(
+            company_name=plan.company_name,
+            executed_at=now_iso,
+            target_directory=str(target_path),
+            dry_run=False,
+            folders_created=created_folders,
+            artifacts_created=created_artifacts,
+            audit_log_path=str(audit_path),
+            master_register_path=str(master_reg_csv),
+            register_version=register_version,
+        )
+
+    def _load_prior_register(self, master_reg_json: Path) -> Tuple[int, Dict[str, Dict[str, Any]]]:
+        """Read an existing JSON register. Returns (register_version, rows by Document_ID)."""
+        if not master_reg_json.exists():
+            return 0, {}
+        try:
+            data = json.loads(master_reg_json.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return 0, {}
+        if isinstance(data, list):  # legacy flat-list format
+            return 0, {r["Document_ID"]: r for r in data if isinstance(r, dict) and "Document_ID" in r}
+        if isinstance(data, dict):
+            entries = data.get("entries", [])
+            return (
+                int(data.get("register_version", 0) or 0),
+                {r["Document_ID"]: r for r in entries if isinstance(r, dict) and "Document_ID" in r},
+            )
+        return 0, {}
+
+    def build_register(
+        self,
+        resolution: ResolutionReport,
+        plan: CompilationPlan,
+        profile_data: Dict[str, Any],
+        prior_version: int = 0,
+        prior_rows: Optional[Dict[str, Dict[str, Any]]] = None,
+        now_iso: Optional[str] = None,
+        compilation_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Compute versioned register rows + provenance without writing files.
+
+        Used by both local compile (prior state from the on-disk register)
+        and Drive apply (prior state from the last recorded compile run).
+        """
+        now_iso = now_iso or datetime.datetime.now(datetime.timezone.utc).isoformat()
+        compilation_id = compilation_id or f"comp-{int(datetime.datetime.now().timestamp())}"
+        prior_rows = prior_rows or {}
+
         register_rows = []
         rows_added = rows_changed = rows_unchanged = 0
         for art in resolution.artifacts:
@@ -258,89 +361,29 @@ class WorkspaceCompiler:
             "rows_unchanged": rows_unchanged,
         }
 
-        # Write CSV
-        with open(master_reg_csv, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=list(register_rows[0].keys()))
-            writer.writeheader()
-            writer.writerows(register_rows)
+        return {"rows": register_rows, "version": register_version, "provenance": provenance}
 
-        # Write JSON — object envelope with provenance + versioned entries
-        with open(master_reg_json, "w", encoding="utf-8") as f:
-            json.dump(
-                {
-                    "register": "CO-001",
-                    "register_version": register_version,
-                    "generated_at": now_iso,
-                    "provenance": provenance,
-                    "entries": register_rows,
-                },
-                f,
-                indent=2,
-            )
+    @staticmethod
+    def render_register_csv(register_rows: List[Dict[str, Any]]) -> str:
+        """Serialize register rows to CSV text (shared by local write + Drive upload)."""
+        import io
+        buf = io.StringIO()
+        writer = csv.DictWriter(buf, fieldnames=list(register_rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(register_rows)
+        return buf.getvalue()
 
-        created_artifacts.append(f"{co_folder}/CO-001_Master_Document_Register.csv")
-
-        # 3. Compile Artifact Templates
-        for item in plan.artifacts_to_compile:
-            # If it's CO-001, we already created the CSV and JSON above
-            if item["id"] == "CO-001":
-                continue
-
-            file_dest = target_path / item["rel_path"]
-            content = self._generate_artifact_template(item, profile_data, now_iso)
-            with open(file_dest, "w", encoding="utf-8") as f:
-                f.write(content)
-            created_artifacts.append(item["rel_path"])
-
-        # 4. Write Immutable Audit Log
-        audit_log = {
-            "compilation_id": compilation_id,
-            "executed_at": now_iso,
-            "company_name": plan.company_name,
-            "target_directory": str(target_path),
-            "ruleset_version": self.resolver.rules_data.get("version", "0.2"),
+    @staticmethod
+    def render_register_json(register_rows: List[Dict[str, Any]], register_version: int,
+                             provenance: Dict[str, Any], now_iso: str) -> Dict[str, Any]:
+        """Versioned register envelope (provenance + entries)."""
+        return {
+            "register": "CO-001",
             "register_version": register_version,
-            "register_provenance": provenance,
-            "total_folders_created": len(created_folders),
-            "total_artifacts_compiled": len(created_artifacts),
-            "created_folders": created_folders,
-            "created_artifacts": created_artifacts,
-            "skipped_existing": plan.skipped_existing,
+            "generated_at": now_iso,
+            "provenance": provenance,
+            "entries": register_rows,
         }
-
-        audit_path = target_path / "compiler_audit_log.json"
-        with open(audit_path, "w", encoding="utf-8") as f:
-            json.dump(audit_log, f, indent=2)
-
-        return CompilationResult(
-            company_name=plan.company_name,
-            executed_at=now_iso,
-            target_directory=str(target_path),
-            dry_run=False,
-            folders_created=created_folders,
-            artifacts_created=created_artifacts,
-            audit_log_path=str(audit_path),
-            master_register_path=str(master_reg_csv),
-            register_version=register_version,
-        )
-
-    def _load_prior_register(self, master_reg_json: Path) -> Tuple[int, Dict[str, Dict[str, Any]]]:
-        """Read an existing JSON register. Returns (register_version, rows by Document_ID)."""
-        if not master_reg_json.exists():
-            return 0, {}
-        try:
-            data = json.loads(master_reg_json.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return 0, {}
-        if isinstance(data, list):  # legacy flat-list format
-            return 0, {r["Document_ID"]: r for r in data if isinstance(r, dict) and "Document_ID" in r}
-        if isinstance(data, dict):
-            entries = data.get("entries", [])
-            return (
-                int(data.get("register_version", 0) or 0),
-                {r["Document_ID"]: r for r in entries if isinstance(r, dict) and "Document_ID" in r},
-            )
-        return 0, {}
 
     @staticmethod
     def _row_fingerprint(row: Dict[str, Any]) -> str:

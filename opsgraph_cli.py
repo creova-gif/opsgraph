@@ -289,8 +289,17 @@ def cmd_compile(args):
         summary = f"register_v{result.register_version} artifacts={len(result.artifacts_created)}"
         if held_count is not None:
             summary += f" held={held_count}"
+        payload = asdict(result)
+        # Anchor for Drive apply: row-level versioning continues from these entries
+        reg_json_path = Path(result.master_register_path).with_suffix(".json")
+        try:
+            payload["register_entries"] = json.loads(
+                reg_json_path.read_text(encoding="utf-8")
+            ).get("entries", [])
+        except (OSError, json.JSONDecodeError):
+            pass
         _record_run(
-            args, "compile", asdict(result),
+            args, "compile", payload,
             summary=summary,
             profile_data=profile_data,
         )
@@ -342,7 +351,7 @@ def cmd_apply(args):
         inventory=snapshot,
         approved_artifact_ids=approved_set,
     )
-    apply_plan = plan_apply(plan, snapshot)
+    apply_plan = plan_apply(plan, snapshot, include_register=True)
 
     print(f"Drive Apply Plan — {apply_plan.company_name}")
     print(f"   Folders to create : {len(apply_plan.folders_to_create)}")
@@ -372,10 +381,55 @@ def cmd_apply(args):
         impersonate=args.impersonate,
     )
     now_iso = datetime.now(timezone.utc).isoformat()
+
+    # Register versioning anchors to the last recorded compile run so Drive
+    # uploads continue the same row-level history instead of restarting at v1.
+    reg_csv = reg_json_text = None
+    register_version = None
+    if any(s.get("content_key") for s in apply_plan.files_to_create):
+        prior_version, prior_rows = 0, {}
+        db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
+        if db_path.exists():
+            store = ProfileStore(db_path)
+            try:
+                latest = store.latest_runs_by_type(company_id_for(profile_data)).get("compile")
+                if latest:
+                    run = store.get_run(latest["id"])
+                    payload = json.loads(run["payload"])
+                    prior_version = int(payload.get("register_version", 0) or 0)
+                    prior_rows = {
+                        r["Document_ID"]: r
+                        for r in payload.get("register_entries", [])
+                        if isinstance(r, dict) and "Document_ID" in r
+                    }
+            finally:
+                store.close()
+        resolution = compiler.resolver.resolve(profile_data)
+        built = compiler.build_register(
+            resolution, plan, profile_data, prior_version, prior_rows,
+            now_iso, compilation_id=f"apply-{int(datetime.now().timestamp())}",
+        )
+        register_version = built["version"]
+        reg_csv = compiler.render_register_csv(built["rows"])
+        reg_json_text = json.dumps(
+            compiler.render_register_json(
+                built["rows"], built["version"], built["provenance"], now_iso
+            ),
+            indent=2,
+        )
+
+    def _content(spec):
+        key = spec.get("content_key")
+        if key == "register_csv":
+            return reg_csv
+        if key == "register_json":
+            return reg_json_text
+        return compiler.render_artifact(spec["item"], profile_data, now_iso)
+
     result = execute_apply(
         apply_plan,
         writer,
-        content_fn=lambda item: compiler.render_artifact(item, profile_data, now_iso),
+        content_fn=_content,
         approver=args.approver,
     )
 
@@ -384,6 +438,8 @@ def cmd_apply(args):
     print(f"   Folders created : {len(result.folders_created)}")
     print(f"   Files created   : {len(result.files_created)}")
     print(f"   Audit entries   : {len(result.audit_log)}")
+    if register_version is not None:
+        print(f"   Register        : v{register_version} uploaded")
 
     _record_run(
         args, "apply", asdict(result),
