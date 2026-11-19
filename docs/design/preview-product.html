@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpsGraph — variant B: numeral</title>
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F5F0; --ink:#1B1A17; --ink-muted:#6B6459;
+    --hairline:#DEDACF; --grid:#E7E3D8;
+    --green:#1B7F4E; --orange:#E8490F; --blue:#1F3FA0;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);font-family:"Instrument Sans",sans-serif;
+       -webkit-font-smoothing:antialiased}
+  .mono{font-family:"JetBrains Mono",monospace}
+  .cert{display:flex;justify-content:space-between;align-items:baseline;
+        padding:14px 40px;border-bottom:1px solid var(--hairline);
+        font-size:11px;letter-spacing:.04em;color:var(--ink-muted)}
+  .cert .brand{font-family:"Cabinet Grotesk",sans-serif;font-weight:700;
+               font-size:14px;color:var(--ink);letter-spacing:.02em}
+  .hero{display:grid;grid-template-columns:auto 1fr 1fr;gap:0;
+        max-width:1280px;margin:0 auto;padding:56px 40px 72px;
+        min-height:640px;align-items:center}
+  .numeral-col{padding-right:72px;border-right:1px solid var(--hairline);margin-right:56px}
+  .numeral{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:170px;
+           line-height:.9;letter-spacing:-.03em}
+  .numeral-caption{margin-top:18px;font-size:12px;letter-spacing:.06em;color:var(--ink-muted)}
+  .tolerance-rule{margin-top:14px;width:160px;height:3px;background:var(--hairline);position:relative}
+  .tolerance-rule::after{content:"";position:absolute;right:0;top:0;width:25%;height:100%;
+                         background:var(--green)}
+  .readout{margin-top:16px;font-size:12px}
+  .tag{display:inline-block;padding:2px 7px;border:1px solid var(--hairline);
+       font-size:11px;letter-spacing:.03em}
+  .tag.green{color:var(--green);border-color:var(--green)}
+  .tag.orange{color:var(--orange);border-color:var(--orange)}
+  .specimen{border:1px solid var(--hairline);padding:0;width:100%;max-width:320px;align-self:center}
+  .specimen .tag{display:flex;justify-content:space-between;padding:8px 12px;
+                 border-bottom:1px solid var(--hairline);font-size:11px}
+  .specimen ul{list-style:none;padding:10px 12px;font-size:12px;line-height:2.05}
+  .observed li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .observed li:nth-child(2){transform:translateX(9px) rotate(-.6deg)}
+  .observed li:nth-child(4){transform:translateX(-5px) rotate(.5deg)}
+  .observed li:nth-child(6){transform:translateX(12px) rotate(-.4deg)}
+  .flag{display:inline-block;width:7px;height:7px;background:var(--orange);
+        margin-right:6px;transform:translateY(-1px) rotate(45deg)}
+  .required{background:
+      repeating-linear-gradient(to bottom, transparent 0 23px, var(--grid) 23px 24px);
+      justify-self:end}
+  .required li{padding-left:16px}
+  .required li .num{color:var(--blue)}
+  .margin-note{max-width:1280px;margin:0 auto;padding:0 40px 64px}
+  h1{font-family:"Cabinet Grotesk",sans-serif;font-weight:800;font-size:52px;
+     line-height:1.02;letter-spacing:-.01em;max-width:420px}
+  .sub{font-size:15px;color:var(--ink-muted);max-width:340px;line-height:1.55;margin-top:18px}
+  .cta{margin-top:28px;display:flex;gap:12px}
+  .btn{font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.05em;
+       padding:11px 18px;border:1px solid var(--ink);background:var(--ink);
+       color:var(--paper);text-decoration:none}
+  .btn.ghost{background:transparent;color:var(--ink)}
+</style>
+</head>
+<body>
+  <div class="cert mono">
+    <span class="brand">OpsGraph</span>
+    <span>CERT OG-001&nbsp;&nbsp;·&nbsp;&nbsp;REV B&nbsp;&nbsp;·&nbsp;&nbsp;ACME CLOUD INC</span>
+    <span>[OBSERVED → REQUIRED]</span>
+  </div>
+
+  <div class="hero">
+    <div class="numeral-col">
+      <div class="numeral">87</div>
+      <div class="numeral-caption mono">READINESS</div>
+      <div class="tolerance-rule"></div>
+      <div class="readout mono">
+        <span class="tag green">[IN TOLERANCE]</span>&nbsp;<span class="tag orange">[DRIFT +12]</span>
+      </div>
+    </div>
+
+    <div class="specimen observed">
+      <div class="tag mono"><span>[OBSERVED]</span><span style="color:var(--orange)">DRIFT +12</span></div>
+      <ul class="mono">
+        <li>final_v2_FINAL(1).docx</li>
+        <li><span class="flag"></span>IMG_2041.pdf</li>
+        <li>Q3 board FINAL final.pptx</li>
+        <li>untitled</li>
+        <li><span class="flag"></span>ONBOARDING (copy) (copy)</li>
+        <li>misc_contracts_scan_old.pdf</li>
+        <li>Board_Deck_2024_OLDUSETHIS</li>
+      </ul>
+    </div>
+
+    <div class="specimen required">
+      <div class="tag mono"><span>[REQUIRED]</span><span style="color:var(--blue)">REV B</span></div>
+      <ul class="mono">
+        <li><span class="num">00</span>_Company_Control</li>
+        <li><span class="num">01</span>_Governance</li>
+        <li><span class="num">02</span>_Legal</li>
+        <li><span class="num">03</span>_Finance</li>
+        <li><span class="num">04</span>_People</li>
+        <li><span class="num">05</span>_Products</li>
+        <li><span class="num">99</span>_Archive</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="margin-note">
+    <h1>Your chaos,<br>measured.</h1>
+    <p class="sub">OpsGraph inventories your Drive, measures it against the operating structure your stage requires, and keeps it there — with a human approving every consequential change.</p>
+    <div class="cta">
+      <a class="btn" href="#">[ REQUEST PILOT ]</a>
+      <a class="btn ghost" href="#">[ SEE THE LOOP ]</a>
+    </div>
+  </div>
+</body>
+</html>
