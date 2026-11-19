@@ -372,6 +372,10 @@ class WorkspaceCompiler:
             return "00_Company_Control"
         return f"{co_artifact.root}_{self._sanitize_folder_name(co_artifact.root_name)}"
 
+    def render_artifact(self, item: Dict[str, Any], profile: Dict[str, Any], timestamp: str) -> str:
+        """Public wrapper around template generation — used by the Drive apply path."""
+        return self._generate_artifact_template(item, profile, timestamp)
+
     def _generate_artifact_template(self, item: Dict[str, Any], profile: Dict[str, Any], timestamp: str) -> str:
         company_name = profile.get("company", {}).get("legal_name", "OpsGraph Client")
         jurisdiction = profile.get("company", {}).get("incorporation_jurisdiction", "Delaware, USA")

@@ -54,6 +54,74 @@ _CHANGE_FIELDS = (
 _RETRYABLE_STATUSES = {403, 429}
 
 
+def execute_with_retry(
+    request,
+    retry_attempts: int = 5,
+    backoff_base: float = 1.0,
+    sleep: Callable[[float], None] = time.sleep,
+) -> Dict[str, Any]:
+    """Execute an API request with exponential backoff on 403/429.
+
+    Duck-typed on the googleapiclient HttpRequest interface so fake
+    services can exercise the same path in tests. Shared by the read
+    adapter and the Phase 2 write adapter.
+    """
+    last_err: Optional[BaseException] = None
+    for attempt in range(retry_attempts):
+        try:
+            return request.execute()
+        except Exception as err:  # googleapiclient.errors.HttpError
+            status = getattr(getattr(err, "resp", None), "status", None)
+            if status is None:
+                status = getattr(err, "status_code", None)
+            if status not in _RETRYABLE_STATUSES or attempt == retry_attempts - 1:
+                raise
+            last_err = err
+            sleep(backoff_base * (2 ** attempt))
+    raise last_err  # unreachable; keeps type-checkers honest
+
+
+def load_drive_credentials(
+    credentials_path: Path,
+    token_path: Optional[Path],
+    impersonate: Optional[str],
+    scopes: List[str],
+):
+    """Resolve OAuth/service-account credentials for a Drive client.
+
+    Shared auth logic for the read-only source and the write adapter;
+    callers pass their own least-privilege scope set.
+    """
+    credentials_path = Path(credentials_path)
+    if _is_service_account_file(credentials_path):
+        creds = service_account.Credentials.from_service_account_file(
+            str(credentials_path), scopes=scopes
+        )
+        return creds.with_subject(impersonate) if impersonate else creds
+
+    token_path = Path(token_path) if token_path else None
+    creds = None
+    if token_path and token_path.exists():
+        creds = Credentials.from_authorized_user_file(str(token_path), scopes)
+    if creds and creds.expired and creds.refresh_token:
+        creds.refresh(Request())
+    if not creds or not creds.valid:
+        flow = InstalledAppFlow.from_client_secrets_file(str(credentials_path), scopes)
+        creds = flow.run_local_server(port=0)
+    if token_path:
+        token_path.parent.mkdir(parents=True, exist_ok=True)
+        token_path.write_text(creds.to_json(), encoding="utf-8")
+    return creds
+
+
+def _is_service_account_file(path: Path) -> bool:
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f).get("type") == "service_account"
+    except (OSError, json.JSONDecodeError):
+        return False
+
+
 class GoogleDriveSource:
     """`WorkspaceSource` backed by the Drive v3 files.list API."""
 
@@ -152,36 +220,9 @@ class GoogleDriveSource:
     # -- auth -----------------------------------------------------------------
 
     def _credentials(self):
-        if self._is_service_account(self.credentials_path):
-            creds = service_account.Credentials.from_service_account_file(
-                str(self.credentials_path), scopes=SCOPES
-            )
-            return creds.with_subject(self.impersonate) if self.impersonate else creds
-        return self._oauth_credentials()
-
-    @staticmethod
-    def _is_service_account(path: Path) -> bool:
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f).get("type") == "service_account"
-        except (OSError, json.JSONDecodeError):
-            return False
-
-    def _oauth_credentials(self):
-        creds = None
-        if self.token_path and self.token_path.exists():
-            creds = Credentials.from_authorized_user_file(str(self.token_path), SCOPES)
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        if not creds or not creds.valid:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                str(self.credentials_path), SCOPES
-            )
-            creds = flow.run_local_server(port=0)
-        if self.token_path:
-            self.token_path.parent.mkdir(parents=True, exist_ok=True)
-            self.token_path.write_text(creds.to_json(), encoding="utf-8")
-        return creds
+        return load_drive_credentials(
+            self.credentials_path, self.token_path, self.impersonate, SCOPES
+        )
 
     # -- listing ---------------------------------------------------------------
 
@@ -205,24 +246,9 @@ class GoogleDriveSource:
                 return items
 
     def _execute_with_retry(self, request) -> Dict[str, Any]:
-        """Execute an API request with exponential backoff on 403/429.
-
-        Duck-typed on the googleapiclient HttpRequest interface so fake
-        services can exercise the same path in tests.
-        """
-        last_err: Optional[BaseException] = None
-        for attempt in range(self.retry_attempts):
-            try:
-                return request.execute()
-            except Exception as err:  # googleapiclient.errors.HttpError
-                status = getattr(getattr(err, "resp", None), "status", None)
-                if status is None:
-                    status = getattr(err, "status_code", None)
-                if status not in _RETRYABLE_STATUSES or attempt == self.retry_attempts - 1:
-                    raise
-                last_err = err
-                self._sleep(self.backoff_base * (2 ** attempt))
-        raise last_err  # unreachable; keeps type-checkers honest
+        return execute_with_retry(
+            request, self.retry_attempts, self.backoff_base, self._sleep
+        )
 
 
 def snapshot_from_drive_items(

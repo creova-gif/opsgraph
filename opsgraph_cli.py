@@ -22,6 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
 from compiler.compiler import WorkspaceCompiler, format_plan_markdown
+from compiler.drive_apply import GoogleDriveWriter, execute_apply, plan_apply
 from dashboard.generator import DashboardGenerator
 from dashboard.server import serve_dashboard
 from demo.run_demo import run_full_demo
@@ -295,6 +296,105 @@ def cmd_compile(args):
         )
 
 
+def cmd_apply(args):
+    """Phase 2: apply an approved compilation plan to a real Google Drive.
+
+    Default is a dry-run diff — pass --execute to write. Writes are
+    create-only, idempotent by artifact ID, and audited; approval-gated
+    when the profile declares require_compile_approval.
+    """
+    profile_path = Path(args.profile)
+    with open(profile_path, "r", encoding="utf-8") as f:
+        profile_data = json.load(f)
+
+    # Before-state inventory: live Drive scan or a provided snapshot.
+    if args.snapshot:
+        snapshot = SnapshotSource(Path(args.snapshot)).scan()
+    else:
+        if not args.credentials:
+            sys.stderr.write(
+                "Error: apply requires --credentials <json> for a live Drive, or --snapshot for an offline diff\n"
+            )
+            sys.exit(1)
+        snapshot = GoogleDriveSource(
+            credentials_path=Path(args.credentials),
+            token_path=Path(args.token) if args.token else None,
+            impersonate=args.impersonate,
+            domain=args.domain,
+        ).scan()
+
+    compiler = WorkspaceCompiler()
+
+    approved_set = None
+    governed = bool((profile_data.get("governance") or {}).get("require_compile_approval"))
+    if governed:
+        db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
+        store = ProfileStore(db_path)
+        try:
+            approved = store.approved_artifact_ids(company_id_for(profile_data))
+        finally:
+            store.close()
+        approved_set = None if "*" in approved else approved
+        print("governance: require_compile_approval enabled by profile — unapproved artifacts will be held")
+
+    plan = compiler.plan(
+        profile_data=profile_data,
+        inventory=snapshot,
+        approved_artifact_ids=approved_set,
+    )
+    apply_plan = plan_apply(plan, snapshot)
+
+    print(f"Drive Apply Plan — {apply_plan.company_name}")
+    print(f"   Folders to create : {len(apply_plan.folders_to_create)}")
+    for name in apply_plan.folders_to_create:
+        print(f"     + {name}/")
+    print(f"   Files to create   : {len(apply_plan.files_to_create)}")
+    for spec in apply_plan.files_to_create:
+        print(f"     + {spec['root_folder']}/{spec['name']}")
+    print(f"   Skipped (existing): {len(apply_plan.skipped)}")
+    if governed:
+        print(f"   Held for approval : unapproved artifacts excluded from plan")
+
+    if not args.execute:
+        print(f"\ndry-run: {apply_plan.total_actions} create actions planned — pass --execute to write to Drive")
+        return
+
+    if not args.approver:
+        sys.stderr.write("Error: --execute requires --approver <name> for the audit trail\n")
+        sys.exit(1)
+    if apply_plan.total_actions == 0:
+        print("\nnothing to apply — Drive already matches the approved plan")
+        return
+
+    writer = GoogleDriveWriter(
+        credentials_path=Path(args.credentials),
+        token_path=Path(args.token) if args.token else None,
+        impersonate=args.impersonate,
+    )
+    now_iso = datetime.now(timezone.utc).isoformat()
+    result = execute_apply(
+        apply_plan,
+        writer,
+        content_fn=lambda item: compiler.render_artifact(item, profile_data, now_iso),
+        approver=args.approver,
+    )
+
+    print(f"\nApplied to Drive for {result.company_name}")
+    print(f"   Approver        : {result.approver}")
+    print(f"   Folders created : {len(result.folders_created)}")
+    print(f"   Files created   : {len(result.files_created)}")
+    print(f"   Audit entries   : {len(result.audit_log)}")
+
+    _record_run(
+        args, "apply", asdict(result),
+        summary=(
+            f"folders={len(result.folders_created)} files={len(result.files_created)} "
+            f"skipped={len(apply_plan.skipped)} approver={result.approver}"
+        ),
+        profile_data=profile_data,
+    )
+
+
 def _consul_client(args) -> ConsulClient:
     """HTTP client when --consul-url is set, else the deterministic local stub."""
     if args.consul_url:
@@ -564,6 +664,20 @@ def main():
     p_compile.add_argument("--record", action="store_true", help="Persist this run to the store")
     p_compile.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_compile.set_defaults(func=cmd_compile)
+
+    # apply
+    p_apply = subparsers.add_parser("apply", help="Apply an approved compilation plan to a real Google Drive (create-only, audited)")
+    p_apply.add_argument("profile", help="Path to company profile JSON")
+    p_apply.add_argument("--credentials", help="OAuth client_secret or service_account JSON (Drive write scope)")
+    p_apply.add_argument("--token", help="Cached OAuth token path (created on first run)")
+    p_apply.add_argument("--impersonate", help="Workspace admin user for service-account domain delegation")
+    p_apply.add_argument("--domain", default="local", help="Workspace domain label recorded in scan metadata")
+    p_apply.add_argument("--snapshot", help="Offline inventory JSON for the before-state diff (no live scan)")
+    p_apply.add_argument("--approver", help="Name recorded as the executing approver (required with --execute)")
+    p_apply.add_argument("--execute", action="store_true", help="Write to Drive — default is a dry-run diff")
+    p_apply.add_argument("--record", action="store_true", help="Persist the apply run to the store")
+    p_apply.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
+    p_apply.set_defaults(func=cmd_apply)
 
     # approve
     p_approve = subparsers.add_parser("approve", help="Record an approval or rejection decision for artifacts")
