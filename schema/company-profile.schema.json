@@ -103,6 +103,13 @@
         "auto_execute_allowed": { "type": "array", "items": { "type": "string" }, "description": "Explicit reversible low-risk operation ids approved at setup." }
       }
     },
+    "governance": {
+      "type": "object",
+      "properties": {
+        "require_compile_approval": { "type": "boolean" }
+      },
+      "additionalProperties": false
+    },
     "provenance": {
       "type": "object",
       "properties": {

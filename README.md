@@ -37,7 +37,7 @@ dump templates - never claim compliance. Delete is never allowed in v1.
 - [x] **Gap Analysis Engine (P1):** Required vs observed diff, domain scorecards, and 0-100% Infrastructure Score (`gap_engine/`)
 - [x] **Workspace Compiler Prototype (P1):** Dry-run preview, folder taxonomy, versioned Master Register (register + row versions, provenance) and template stubs with provenance (`compiler/`)
 - [x] **Company Guardian Prototype (P2):** Continuous drift detection, staleness alerts, duplicate collisions, and weekly Health Digest (`guardian/`)
-- [x] **Persistent Store:** Versioned profiles, engine-run history (`--record`, `history`), and an append-only approval ledger — `approve`/`approvals` record decisions, `compile --require-approval` only compiles store-approved artifacts (`store/`)
+- [x] **Persistent Store:** Versioned profiles, engine-run history (`--record`, `history`), and an append-only approval ledger — `approve`/`approvals` record decisions, `compile --require-approval` only compiles store-approved artifacts, automatic when the profile sets `governance.require_compile_approval` (`store/`)
 - [x] **Interactive Visual Dashboard:** Standalone single-file HTML report with 0–100% dial, gap matrix, and drift feed (`dashboard/`)
 - [x] **Pilot Offer Kit:** 48-Hour offer one-pager, delivery checklist, intake form (`docs/pilot/`)
 - [x] **Evidence Room:** 9-folder structure + draft YC application answers (`evidence-room/`)

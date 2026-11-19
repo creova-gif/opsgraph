@@ -234,8 +234,13 @@ def cmd_compile(args):
     compiler = WorkspaceCompiler()
     approved_set = set(args.approve) if args.approve else None
     held_count = None
+    require_approval = args.require_approval or bool(
+        (profile_data.get("governance") or {}).get("require_compile_approval")
+    )
 
-    if args.require_approval:
+    if require_approval:
+        if not args.require_approval:
+            print("governance: require_compile_approval enabled by profile")
         db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
         store = ProfileStore(db_path)
         try:

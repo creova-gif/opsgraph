@@ -73,6 +73,19 @@ class TestProfileStore(unittest.TestCase):
             self.store.save_profile({"company": {"legal_name": "Missing everything else"}})
         self.assertEqual(self.store.list_companies(), [])
 
+    def test_governed_profile_validates_and_saves(self):
+        profile = _valid_profile()
+        profile["governance"] = {"require_compile_approval": True}
+        cid, version = self.store.save_profile(profile)
+        self.assertEqual((cid, version), ("acmecloud-io", 1))
+        self.assertTrue(self.store.get_profile(cid)["governance"]["require_compile_approval"])
+
+    def test_governance_flag_must_be_boolean(self):
+        profile = _valid_profile()
+        profile["governance"] = {"require_compile_approval": "yes"}
+        with self.assertRaises(ValueError):
+            self.store.save_profile(profile)
+
 
 class TestRunHistory(unittest.TestCase):
     def setUp(self):
