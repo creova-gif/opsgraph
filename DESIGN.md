@@ -366,6 +366,8 @@ simulation markers · more than one accent in a component.
 | Web surfaces | Landing hero (gauge) + app dashboard (numeral) at production width | Kit board 11 — page architecture locked: cert strip → hero → transformation → method → footer |
 | Mobile | Numeral leads; reject-fill only on destructive confirm | Kit board 12 — three 390px specimens: dashboard, drift event, approvals |
 | Mark assets | SVG exports in `docs/design/mark/` | Governance manifest made real — mark ships as files, not screenshots |
+| Lint standing waivers | Mono caps tags, `01 — SCAN` step labels, mark-lockup nav, 26px sectionHead | Brand signatures, not slop — pages inherit these instead of re-arguing per page |
+| Semantic text shades | `--spec-text`/`--drift-text`/`--pass-text` darker than the hue tokens | Token hues keep 3:1 element contrast; small text needs 4.5:1 against paper |
 
 *Researched: Vanta, Linear, Attio, Plain (Drata bot-walled). Category converges
 on dense vigilance marketing; nobody sells relief. OpsGraph's differentiator is
