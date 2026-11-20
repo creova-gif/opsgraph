@@ -367,6 +367,7 @@ simulation markers · more than one accent in a component.
 | Mobile | Numeral leads; reject-fill only on destructive confirm | Kit board 12 — three 390px specimens: dashboard, drift event, approvals |
 | Mark assets | SVG exports in `docs/design/mark/` | Governance manifest made real — mark ships as files, not screenshots |
 | Lint standing waivers | Mono caps tags, `01 — SCAN` step labels, mark-lockup nav, 26px sectionHead | Brand signatures, not slop — pages inherit these instead of re-arguing per page |
+| App-surface density | Dashboard screens inherit the 36px ledger spec, not marketing 120px section rhythm | `docs/design/dashboard.html` — hero-balance/section-gap/thin-section lint rules don't apply to product surfaces |
 | Semantic text shades | `--spec-text`/`--drift-text`/`--pass-text` darker than the hue tokens | Token hues keep 3:1 element contrast; small text needs 4.5:1 against paper |
 
 *Researched: Vanta, Linear, Attio, Plain (Drata bot-walled). Category converges
