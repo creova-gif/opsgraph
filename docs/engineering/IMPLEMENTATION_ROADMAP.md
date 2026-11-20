@@ -83,8 +83,11 @@ drift) and cites artifact IDs, files, and event IDs. Mode E's deterministic
 floor is also built: `opsgraph digest` diffs consecutive recorded guardian
 runs into new/resolved/persistent/escalated events plus health movement —
 the event-driven check the scheduled guardian mode will emit on a timer.
-Consul synthesis layers on top once Phase 3 is live; retrieval, citations,
-and deltas stay the grounding source either way.
+Mode C's deterministic floor is built too: `opsgraph plan` orders every
+actionable gap into P0 critical-path → P1–P3 phases in the resolver's
+dependency order, annotating which steps block on which. Consul synthesis
+layers on top once Phase 3 is live; retrieval, citations, deltas, and
+order constraints stay the grounding source either way.
 
 ## Phase 5 — Commercial SaaS
 

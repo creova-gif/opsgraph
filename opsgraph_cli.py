@@ -39,6 +39,7 @@ from guardian.guardian import CompanyGuardian, format_health_digest_markdown, lo
 from integrations.consul import ConsulClient, ConsulUnavailable, HTTPConsulClient, StubConsulClient
 from inventory.drive_source import GoogleDriveSource, merge_delta
 from inventory.scanner import LocalDirectorySource, SnapshotSource, WorkspaceScanner
+from plan.planner import build_plan, format_plan_markdown
 from qa.answerer import CompanyAnswerer
 from resolver.resolver import StateResolver, format_markdown
 from store.store import DEFAULT_DB_PATH, ProfileStore, company_id_for
@@ -755,6 +756,30 @@ def cmd_ask(args):
     )
 
 
+def cmd_plan(args):
+    """Deterministic remediation plan: phased, dependency-ordered gap fixes."""
+    with open(args.profile, "r", encoding="utf-8") as f:
+        profile_data = json.load(f)
+    inventory_snapshot = WorkspaceScanner().load_snapshot(Path(args.inventory))
+
+    resolver = StateResolver()
+    resolution = resolver.resolve(profile_data)
+    gap_report = GapAnalyzer().analyze(resolution, inventory_snapshot)
+
+    plan = build_plan(gap_report.company_name, resolution, gap_report)
+
+    if args.format == "json":
+        print(json.dumps(asdict(plan), indent=2))
+    else:
+        print(format_plan_markdown(plan))
+
+    _record_run(
+        args, "plan", asdict(plan),
+        summary=f"steps={len(plan.steps)} p0={plan.phase_counts.get(0, 0)}",
+        profile_data=profile_data,
+    )
+
+
 def cmd_digest(args):
     """Diff the two most recent recorded guardian runs for a company."""
     store = ProfileStore(Path(getattr(args, "db", None) or DEFAULT_DB_PATH))
@@ -920,7 +945,7 @@ def main():
     # history
     p_hist = subparsers.add_parser("history", help="List recorded engine runs from the store")
     p_hist.add_argument("--company-id", default=None, help="Filter by company")
-    p_hist.add_argument("--type", choices=["scan", "resolve", "gap", "compile", "guardian", "apply", "reverse", "ask"], default=None)
+    p_hist.add_argument("--type", choices=["scan", "resolve", "gap", "compile", "guardian", "apply", "reverse", "ask", "plan"], default=None)
     p_hist.add_argument("--run-id", type=int, default=None, help="Print a single run payload")
     p_hist.add_argument("--limit", type=int, default=20)
     p_hist.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
@@ -941,6 +966,15 @@ def main():
     p_ask.add_argument("--record", action="store_true", help="Persist this run to the store")
     p_ask.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_ask.set_defaults(func=cmd_ask)
+
+    # plan
+    p_plan = subparsers.add_parser("plan", help="Dependency-ordered remediation plan (deterministic Mode C)")
+    p_plan.add_argument("--profile", required=True, help="Path to company profile JSON")
+    p_plan.add_argument("--inventory", required=True, help="Path to workspace inventory JSON")
+    p_plan.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p_plan.add_argument("--record", action="store_true", help="Persist this run to the store")
+    p_plan.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
+    p_plan.set_defaults(func=cmd_plan)
 
     # digest
     p_digest = subparsers.add_parser("digest", help="Diff the last two recorded guardian runs (what changed)")
