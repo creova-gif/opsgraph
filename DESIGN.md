@@ -335,8 +335,9 @@ names the same set. Nothing external ships from a screenshot.
   sanctioned dark surface.
 - `docs/design/tokens.json` — color, font, motion, and the hue/simulation/
   surface/reject contracts as data; matches the board 07 tokens block.
-- Favicon PNGs (`16`, `32`) rasterize from `mark-symbol.svg`; certificate PDF
-  pending a real template.
+- `docs/design/favicon/{16,32}.png` — rasterized from the mark essence;
+  heavier stroke, paper ground (readable in dark browser chrome).
+- Certificate PDF pending a real template.
 
 ## 11. Banned / never-ship list
 
