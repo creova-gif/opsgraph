@@ -350,3 +350,179 @@ class MemoryDriveWriter:
             "parent_id": parent_id, "mime_type": mime_type, "content": content,
         })
         return new_id
+
+
+# --- Reversal (apply --reverse) -------------------------------------------
+#
+# Deliberately a separate protocol and client from DriveWriteBackend: the
+# create-only contract stays intact because reversal is a distinct adapter
+# requiring its own credentials, its own approver, and its own run record.
+
+
+@runtime_checkable
+class DriveTrashBackend(Protocol):
+    """Trash-only surface for reversing an apply. One method, nothing else."""
+
+    def trash(self, file_id: str) -> None:
+        ...
+
+
+@dataclass
+class ReversePlan:
+    run_id: int
+    company_name: str
+    files_to_trash: List[Dict[str, str]]      # {new_id, name, artifact_id}
+    folders_to_trash: List[Dict[str, str]]    # {new_id, name}
+    skipped_entries: int
+    total_actions: int
+
+
+@dataclass
+class ReverseResult:
+    run_id: int
+    company_name: str
+    executed_at: str
+    approver: str
+    trashed: List[Dict[str, str]]
+    failed: List[Dict[str, str]]
+    audit_log: List[Dict[str, Any]]
+
+
+def plan_reverse(run: Dict[str, Any]) -> ReversePlan:
+    """Extract the reversal manifest from a recorded apply run.
+
+    The manifest is exactly the set of `new_id`s on `create_*` audit entries —
+    the IDs Drive assigned, captured at write time. Files are trashed before
+    folders so parents are emptied first.
+    """
+    payload = run.get("payload") or {}
+    files: List[Dict[str, str]] = []
+    folders: List[Dict[str, str]] = []
+    skipped = 0
+    for entry in payload.get("audit_log") or []:
+        if entry.get("action") == "create_file":
+            files.append({
+                "new_id": entry["new_id"],
+                "name": entry.get("name", ""),
+                "artifact_id": entry.get("artifact_id", ""),
+            })
+        elif entry.get("action") == "create_folder":
+            folders.append({"new_id": entry["new_id"], "name": entry.get("name", "")})
+        elif entry.get("action") == "skip":
+            skipped += 1
+    return ReversePlan(
+        run_id=int(run.get("id", 0)),
+        company_name=payload.get("company_name") or run.get("company_id", ""),
+        files_to_trash=files,
+        folders_to_trash=folders,
+        skipped_entries=skipped,
+        total_actions=len(files) + len(folders),
+    )
+
+
+def execute_reverse(
+    plan: ReversePlan,
+    backend: DriveTrashBackend,
+    approver: str,
+) -> ReverseResult:
+    """Trash the reversal manifest — files first, then folders.
+
+    Per-item failures are recorded and do not stop the pass: a half-trashed
+    apply is still fully described by the returned audit log, and a re-run
+    of --reverse is idempotent because trashed IDs simply fail as not-found.
+    """
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    trashed: List[Dict[str, str]] = []
+    failed: List[Dict[str, str]] = []
+    audit: List[Dict[str, Any]] = []
+
+    for kind, items in (("file", plan.files_to_trash), ("folder", plan.folders_to_trash)):
+        for item in items:
+            entry = {"action": "trash", "kind": kind, **item}
+            try:
+                backend.trash(item["new_id"])
+                trashed.append({"kind": kind, **item})
+                audit.append({**entry, "result": "trashed"})
+            except Exception as exc:  # per-item failure never halts the pass
+                failed.append({"kind": kind, "error": str(exc), **item})
+                audit.append({**entry, "result": "failed", "error": str(exc)})
+
+    return ReverseResult(
+        run_id=plan.run_id,
+        company_name=plan.company_name,
+        executed_at=now_iso,
+        approver=approver,
+        trashed=trashed,
+        failed=failed,
+        audit_log=audit,
+    )
+
+
+class GoogleDriveTrasher:
+    """Live `DriveTrashBackend` — sets trashed=true via files.update.
+
+    A separate class (not a method on GoogleDriveWriter) so the trash
+    capability is opt-in per credential and never rides along with an apply.
+    drive.file scope suffices because reversal only touches objects the
+    app itself created.
+    """
+
+    def __init__(
+        self,
+        credentials_path: Optional[Path] = None,
+        token_path: Optional[Path] = None,
+        impersonate: Optional[str] = None,
+        service: Any = None,
+        retry_attempts: int = 5,
+        backoff_base: float = 1.0,
+        sleep: Callable[[float], None] = time.sleep,
+    ):
+        if service is None:
+            if not _GOOGLE_AVAILABLE:
+                raise RuntimeError(
+                    "Google API libraries not installed. Run: pip install -e '.[drive]'"
+                )
+            if credentials_path is None:
+                raise ValueError("credentials_path is required when no service is injected")
+        self.credentials_path = Path(credentials_path) if credentials_path else None
+        self.token_path = Path(token_path) if token_path else None
+        self.impersonate = impersonate
+        self._service = service
+        self.retry_attempts = retry_attempts
+        self.backoff_base = backoff_base
+        self._sleep = sleep
+
+    def _service_client(self):
+        if self._service is None:
+            self._service = build(
+                "drive", "v3",
+                credentials=load_drive_credentials(
+                    self.credentials_path, self.token_path,
+                    self.impersonate, WRITE_SCOPES,
+                ),
+            )
+        return self._service
+
+    def trash(self, file_id: str) -> None:
+        execute_with_retry(
+            self._service_client().files().update(
+                fileId=file_id,
+                body={"trashed": True},
+                fields="id,trashed",
+                supportsAllDrives=True,
+            ),
+            self.retry_attempts, self.backoff_base, self._sleep,
+        )
+
+
+class MemoryDriveTrasher:
+    """In-memory `DriveTrashBackend` — records trashes; can be told to fail."""
+
+    def __init__(self, fail_ids: Optional[List[str]] = None):
+        self.trashed: List[str] = []
+        self.fail_ids = set(fail_ids or [])
+
+    def trash(self, file_id: str) -> None:
+        if file_id in self.fail_ids:
+            raise RuntimeError(f"simulated failure trashing {file_id}")
+        self.trashed.append(file_id)

@@ -71,21 +71,22 @@ apply-by-creation:
   code path that can trash a Drive ID can trash *any* Drive ID it can reach;
   keeping that code out of `DriveWriteBackend` keeps the whole apply path
   structurally safe.
-- A `trash` method would also need `drive` (full) scope rather than the
-  least-privilege `drive.file` scope the writer uses today — a bigger blast
-  radius for a path that should run rarely.
-- The correct future shape is a **separate adapter with a separate
-  credential**: `opsgraph apply --reverse <run_id>` would read the run's
-  audit log, require a fresh `--approver`, use a trash-capable client scoped
-  for that purpose only, and record a `reverse` run of its own. Designing it
-  this way keeps "reversible" true without weakening "never destructive by
-  accident."
+- A `trash` capability is still a delete-class operation on Drive IDs;
+  keeping it behind a different constructor means an apply credential can
+  never accidentally gain it.
+- The correct shape is a **separate adapter**: `opsgraph apply --reverse
+  <run_id>` reads the run's audit log, requires a fresh `--approver`, uses a
+  trash-capable client (`DriveTrashBackend`, one `trash` method) constructed
+  for that purpose only, and records a `reverse` run of its own. `drive.file`
+  scope suffices because reversal only touches objects the app itself
+  created. Designing it this way keeps "reversible" true without weakening
+  "never destructive by accident."
 
 ## What reversal does not touch
 
 - **The store.** The SQLite run history and approval ledger are append-only
   by design — a reversed apply stays in history (that is the audit trail),
-  annotated by its own reversal record when `--reverse` exists.
+  annotated by its own `reverse` run record.
 - **The register's version lineage.** `compile --record` remains the version
   of record; trashing a Drive copy of `CO-001_Master_Document_Register.*`
   does not reset register versioning — a subsequent apply re-uploads at the
@@ -93,8 +94,20 @@ apply-by-creation:
 - **Anything Drive-side that OpsGraph did not create.** Skipped and
   pre-existing files are outside the reversal set by construction.
 
-## Open item
+## Implementation
 
-`apply --reverse <run_id>` is specified above but not implemented; it is the
-only remaining Phase 2 feature work, alongside the credentialed real-Drive
-validation run that gates the phase exit.
+Implemented as specified:
+
+- `compiler/drive_apply.py` — `DriveTrashBackend` (single `trash(file_id)`
+  method, no other surface), `plan_reverse` (manifest from the run's
+  `audit_log`, files before folders), `execute_reverse` (per-item failures
+  recorded, never halting the pass), `GoogleDriveTrasher` (`files.update`
+  with `trashed: true`, `drive.file` scope) and `MemoryDriveTrasher`.
+- `opsgraph_cli.py` — `apply --reverse <run_id>`: dry-run prints the
+  manifest; `--execute` requires a fresh `--approver` and `--credentials`;
+  non-`apply` and missing run IDs are rejected; executed reversals record a
+  `reverse` run against the same `company_id`.
+- `store/store.py` — `reverse` added to `RUN_TYPES`.
+
+The remaining Phase 2 gate is the credentialed real-Drive validation run —
+apply, then reverse, on a test Workspace.

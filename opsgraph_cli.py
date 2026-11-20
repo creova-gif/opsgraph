@@ -22,7 +22,14 @@ BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
 from compiler.compiler import WorkspaceCompiler, format_plan_markdown
-from compiler.drive_apply import GoogleDriveWriter, execute_apply, plan_apply
+from compiler.drive_apply import (
+    GoogleDriveTrasher,
+    GoogleDriveWriter,
+    execute_apply,
+    execute_reverse,
+    plan_apply,
+    plan_reverse,
+)
 from dashboard.generator import DashboardGenerator
 from dashboard.server import serve_dashboard
 from demo.run_demo import run_full_demo
@@ -312,6 +319,13 @@ def cmd_apply(args):
     create-only, idempotent by artifact ID, and audited; approval-gated
     when the profile declares require_compile_approval.
     """
+    if getattr(args, "reverse", None) is not None:
+        cmd_reverse(args)
+        return
+
+    if not args.profile:
+        sys.stderr.write("Error: apply requires a profile path (or --reverse <run_id>)\n")
+        sys.exit(1)
     profile_path = Path(args.profile)
     with open(profile_path, "r", encoding="utf-8") as f:
         profile_data = json.load(f)
@@ -370,6 +384,9 @@ def cmd_apply(args):
 
     if not args.approver:
         sys.stderr.write("Error: --execute requires --approver <name> for the audit trail\n")
+        sys.exit(1)
+    if not args.credentials:
+        sys.stderr.write("Error: --execute requires --credentials <json> for a live Drive\n")
         sys.exit(1)
     if apply_plan.total_actions == 0:
         print("\nnothing to apply — Drive already matches the approved plan")
@@ -448,6 +465,80 @@ def cmd_apply(args):
             f"skipped={len(apply_plan.skipped)} approver={result.approver}"
         ),
         profile_data=profile_data,
+    )
+
+
+def cmd_reverse(args):
+    """Reverse a recorded apply run — trash exactly the IDs it created.
+
+    Deliberately a separate path from apply: its own manifest (the apply
+    run's audit log), its own credential, its own --approver, its own
+    'reverse' run record. Dry-run prints the manifest; --execute trashes
+    files then folders. See docs/engineering/APPLY_REVERSIBILITY.md.
+    """
+    run_id = args.reverse
+    db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
+    store = ProfileStore(db_path)
+    try:
+        run = store.get_run(run_id)
+    finally:
+        store.close()
+
+    if run is None:
+        sys.stderr.write(f"Error: no run #{run_id} in {db_path}\n")
+        sys.exit(1)
+    if run["run_type"] != "apply":
+        sys.stderr.write(
+            f"Error: run #{run_id} is a {run['run_type']} run — only apply runs are reversible\n"
+        )
+        sys.exit(1)
+
+    plan = plan_reverse(run)
+
+    print(f"Reverse Plan — apply run #{plan.run_id} ({plan.company_name})")
+    print(f"   Files to trash   : {len(plan.files_to_trash)}")
+    for item in plan.files_to_trash:
+        print(f"     {item['new_id']}  {item['name']}")
+    print(f"   Folders to trash : {len(plan.folders_to_trash)}")
+    for item in plan.folders_to_trash:
+        print(f"     {item['new_id']}  {item['name']}")
+
+    if plan.total_actions == 0:
+        print("\nnothing created by that apply — nothing to reverse")
+        return
+    if not args.execute:
+        print(f"\ndry-run: {plan.total_actions} trash actions planned — pass --execute to reverse")
+        return
+    if not args.approver:
+        sys.stderr.write("Error: --execute requires --approver (reversal needs its own sign-off)\n")
+        sys.exit(1)
+    if not args.credentials:
+        sys.stderr.write(
+            "Error: --execute requires --credentials <json> for a live Drive\n"
+        )
+        sys.exit(1)
+
+    trasher = GoogleDriveTrasher(
+        credentials_path=Path(args.credentials),
+        token_path=Path(args.token) if args.token else None,
+        impersonate=args.impersonate,
+    )
+    result = execute_reverse(plan, trasher, approver=args.approver)
+
+    print(f"\nReversed apply #{result.run_id} for {result.company_name}")
+    print(f"   Approver : {result.approver}")
+    print(f"   Trashed  : {len(result.trashed)}")
+    print(f"   Failed   : {len(result.failed)}")
+    for item in result.failed:
+        print(f"     ✗ {item['new_id']}  {item['name']}  — {item['error']}")
+
+    _record_run(
+        args, "reverse", asdict(result),
+        summary=(
+            f"reversed apply #{result.run_id}: trashed={len(result.trashed)} "
+            f"failed={len(result.failed)} approver={result.approver}"
+        ),
+        company_id=run["company_id"],
     )
 
 
@@ -723,7 +814,8 @@ def main():
 
     # apply
     p_apply = subparsers.add_parser("apply", help="Apply an approved compilation plan to a real Google Drive (create-only, audited)")
-    p_apply.add_argument("profile", help="Path to company profile JSON")
+    p_apply.add_argument("profile", nargs="?", help="Path to company profile JSON (not needed with --reverse)")
+    p_apply.add_argument("--reverse", type=int, metavar="RUN_ID", help="Reverse a recorded apply run — trash exactly the IDs it created")
     p_apply.add_argument("--credentials", help="OAuth client_secret or service_account JSON (Drive write scope)")
     p_apply.add_argument("--token", help="Cached OAuth token path (created on first run)")
     p_apply.add_argument("--impersonate", help="Workspace admin user for service-account domain delegation")

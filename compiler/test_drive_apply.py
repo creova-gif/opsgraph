@@ -14,11 +14,15 @@ sys.path.insert(0, str(BASE_DIR))
 
 from compiler.compiler import CompilationPlan
 from compiler.drive_apply import (
+    DriveTrashBackend,
     DriveWriteBackend,
     GoogleDriveWriter,
+    MemoryDriveTrasher,
     MemoryDriveWriter,
     execute_apply,
+    execute_reverse,
     plan_apply,
+    plan_reverse,
 )
 from inventory.scanner import InventorySnapshot, WorkspaceFile, WorkspaceFolder
 
@@ -257,6 +261,85 @@ class TestGoogleDriveWriter(unittest.TestCase):
         writer = GoogleDriveWriter(service=FakeWriteService())
         for attr in ("delete", "trash", "update", "copy"):
             self.assertFalse(hasattr(writer, attr))
+
+
+def _apply_run(audit_log, run_id=7, company_id="acme-io"):
+    return {
+        "id": run_id,
+        "run_type": "apply",
+        "company_id": company_id,
+        "payload": {"company_name": "Acme", "audit_log": audit_log},
+    }
+
+
+class TestPlanReverse(unittest.TestCase):
+    def test_extracts_create_ids_files_then_folders(self):
+        run = _apply_run([
+            {"action": "create_folder", "name": "00_Admin", "new_id": "fld-1"},
+            {"action": "create_file", "name": "HR-014_Offer.md", "artifact_id": "HR-014", "new_id": "f-9"},
+            {"action": "create_file", "name": "CO-001_Master_Document_Register.csv", "new_id": "f-10"},
+            {"action": "skip", "name": "old.doc", "reason": "exists"},
+        ])
+        plan = plan_reverse(run)
+        self.assertEqual(plan.run_id, 7)
+        self.assertEqual(plan.company_name, "Acme")
+        self.assertEqual([f["new_id"] for f in plan.files_to_trash], ["f-9", "f-10"])
+        self.assertEqual([f["new_id"] for f in plan.folders_to_trash], ["fld-1"])
+        self.assertEqual(plan.skipped_entries, 1)
+        self.assertEqual(plan.total_actions, 3)
+
+    def test_empty_audit_log_plans_nothing(self):
+        plan = plan_reverse(_apply_run([]))
+        self.assertEqual(plan.total_actions, 0)
+        self.assertEqual(plan.files_to_trash, [])
+        self.assertEqual(plan.folders_to_trash, [])
+
+    def test_ignores_non_create_actions(self):
+        plan = plan_reverse(_apply_run([
+            {"action": "skip", "name": "x"},
+            {"action": "note", "name": "y"},
+        ]))
+        self.assertEqual(plan.total_actions, 0)
+        self.assertEqual(plan.skipped_entries, 1)
+
+
+class TestExecuteReverse(unittest.TestCase):
+    def _run(self):
+        return _apply_run([
+            {"action": "create_folder", "name": "00_Admin", "new_id": "fld-1"},
+            {"action": "create_folder", "name": "20_People", "new_id": "fld-2"},
+            {"action": "create_file", "name": "HR-014_Offer.md", "artifact_id": "HR-014", "new_id": "f-9"},
+            {"action": "create_file", "name": "LG-007_NDA.md", "artifact_id": "LG-007", "new_id": "f-10"},
+        ])
+
+    def test_trashes_files_before_folders(self):
+        plan = plan_reverse(self._run())
+        trasher = MemoryDriveTrasher()
+        result = execute_reverse(plan, trasher, approver="j.mafie")
+        self.assertEqual(trasher.trashed, ["f-9", "f-10", "fld-1", "fld-2"])
+        self.assertEqual(len(result.trashed), 4)
+        self.assertEqual(result.failed, [])
+        self.assertEqual(result.approver, "j.mafie")
+        self.assertEqual(result.run_id, 7)
+
+    def test_per_item_failure_does_not_halt_pass(self):
+        plan = plan_reverse(self._run())
+        trasher = MemoryDriveTrasher(fail_ids=["f-10"])
+        result = execute_reverse(plan, trasher, approver="j.mafie")
+        self.assertEqual(trasher.trashed, ["f-9", "fld-1", "fld-2"])
+        self.assertEqual(len(result.trashed), 3)
+        self.assertEqual(len(result.failed), 1)
+        self.assertEqual(result.failed[0]["new_id"], "f-10")
+        # audit log records both outcomes — the before/after trail
+        self.assertEqual(len(result.audit_log), 4)
+        results = {e["new_id"]: e["result"] for e in result.audit_log}
+        self.assertEqual(results["f-10"], "failed")
+        self.assertEqual(results["f-9"], "trashed")
+
+    def test_trash_only_protocol(self):
+        trasher = MemoryDriveTrasher()
+        for attr in ("create_folder", "create_file", "delete", "update"):
+            self.assertFalse(hasattr(trasher, attr))
 
 
 if __name__ == "__main__":

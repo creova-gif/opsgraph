@@ -55,7 +55,7 @@ missing.
 | Approval gate | Approval token required for any write; local-signed approval record persisted with the compile run. |
 | Audit trail | Every write logged with before/after state, approver, timestamp. |
 | No destructive ops | Initial release never deletes/moves existing customer files. |
-| Reversibility | Create-only backend; full created-ID manifest in every recorded run. Contract + procedure: `APPLY_REVERSIBILITY.md`. `apply --reverse` specified, not yet implemented. |
+| Reversibility | `apply --reverse <run_id>` implemented per `APPLY_REVERSIBILITY.md` — separate `DriveTrashBackend`, manifest from the run's audit log, files before folders, fresh approver, `reverse` run recorded. Live validation pending credentials. |
 
 **Exit:** OpsGraph applies an approved gap-fix plan into a real Drive, reversibly and audibly.
 
