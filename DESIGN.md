@@ -322,6 +322,22 @@ a stamp hitting paper, a needle settling — never like SaaS micro-interactions.
 - **Chrome** — 1.5px ink viewport frame; Instrument Sans chrome text; safe
   single-column throughout.
 
+## 10h. Assets (what ships)
+
+Real, versioned exports live in this repo; the Paper manifest (board 07)
+names the same set. Nothing external ships from a screenshot.
+
+- `docs/design/mark/mark-primary.svg` — full mark: dial, five ticks, needle,
+  dot. Display size.
+- `docs/design/mark/mark-symbol.svg` — small-size essence: dial, needle, dot.
+  Nav, favicon source, <24px.
+- `docs/design/mark/mark-reversed.svg` — paper-on-ink for the OG card and any
+  sanctioned dark surface.
+- `docs/design/tokens.json` — color, font, motion, and the hue/simulation/
+  surface/reject contracts as data; matches the board 07 tokens block.
+- Favicon PNGs (`16`, `32`) rasterize from `mark-symbol.svg`; certificate PDF
+  pending a real template.
+
 ## 11. Banned / never-ship list
 
 Purple in any role · gradients · glow/neon · near-black dark mode · pill
@@ -348,6 +364,7 @@ simulation markers · more than one accent in a component.
 | Templates | Deck/doc/OG-card/icon as locked starting points | Kit board 10 — four artifacts that carry the brand |
 | Web surfaces | Landing hero (gauge) + app dashboard (numeral) at production width | Kit board 11 — page architecture locked: cert strip → hero → transformation → method → footer |
 | Mobile | Numeral leads; reject-fill only on destructive confirm | Kit board 12 — three 390px specimens: dashboard, drift event, approvals |
+| Mark assets | SVG exports in `docs/design/mark/` | Governance manifest made real — mark ships as files, not screenshots |
 
 *Researched: Vanta, Linear, Attio, Plain (Drata bot-walled). Category converges
 on dense vigilance marketing; nobody sells relief. OpsGraph's differentiator is
