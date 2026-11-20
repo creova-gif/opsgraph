@@ -34,6 +34,7 @@ from dashboard.generator import DashboardGenerator
 from dashboard.server import serve_dashboard
 from demo.run_demo import run_full_demo
 from gap_engine.analyzer import GapAnalyzer, format_gap_markdown
+from guardian.digest import diff_digests, format_digest_delta
 from guardian.guardian import CompanyGuardian, format_health_digest_markdown, load_register_entries
 from integrations.consul import ConsulClient, ConsulUnavailable, HTTPConsulClient, StubConsulClient
 from inventory.drive_source import GoogleDriveSource, merge_delta
@@ -754,6 +755,30 @@ def cmd_ask(args):
     )
 
 
+def cmd_digest(args):
+    """Diff the two most recent recorded guardian runs for a company."""
+    store = ProfileStore(Path(getattr(args, "db", None) or DEFAULT_DB_PATH))
+    try:
+        runs = store.list_runs(company_id=args.company_id, run_type="guardian", limit=2)
+        if len(runs) < 2:
+            sys.stderr.write(
+                f"need 2 recorded guardian runs for '{args.company_id}' "
+                f"(found {len(runs)}); run guardian --record twice first\n"
+            )
+            sys.exit(1)
+        latest = store.get_run(runs[0]["id"])
+        previous = store.get_run(runs[1]["id"])
+    finally:
+        store.close()
+
+    delta = diff_digests(previous["payload"], latest["payload"])
+    if args.format == "json":
+        print(json.dumps(delta, indent=2))
+    else:
+        print(format_digest_delta(delta))
+        print(f"\n(runs #{previous['id']} → #{latest['id']})")
+
+
 def cmd_dashboard(args):
     profile_path = Path(args.profile)
     with open(profile_path, "r", encoding="utf-8") as f:
@@ -916,6 +941,13 @@ def main():
     p_ask.add_argument("--record", action="store_true", help="Persist this run to the store")
     p_ask.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_ask.set_defaults(func=cmd_ask)
+
+    # digest
+    p_digest = subparsers.add_parser("digest", help="Diff the last two recorded guardian runs (what changed)")
+    p_digest.add_argument("company_id", help="Company ID (domain slug)")
+    p_digest.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p_digest.add_argument("--db", default=None, help=f"SQLite DB path (default: {DEFAULT_DB_PATH})")
+    p_digest.set_defaults(func=cmd_digest)
 
     # dashboard
     p_dash = subparsers.add_parser("dashboard", help="Generate single-file interactive HTML readiness dashboard")
