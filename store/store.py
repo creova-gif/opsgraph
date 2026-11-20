@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS approvals (
 CREATE INDEX IF NOT EXISTS idx_approvals_company ON approvals(company_id, artifact_id, id);
 """
 
-RUN_TYPES = {"scan", "resolve", "gap", "compile", "guardian", "apply", "reverse"}
+RUN_TYPES = {"scan", "resolve", "gap", "compile", "guardian", "apply", "reverse", "ask"}
 
 
 def company_id_for(profile: Dict[str, Any]) -> str:

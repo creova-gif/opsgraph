@@ -38,6 +38,7 @@ from guardian.guardian import CompanyGuardian, format_health_digest_markdown, lo
 from integrations.consul import ConsulClient, ConsulUnavailable, HTTPConsulClient, StubConsulClient
 from inventory.drive_source import GoogleDriveSource, merge_delta
 from inventory.scanner import LocalDirectorySource, SnapshotSource, WorkspaceScanner
+from qa.answerer import CompanyAnswerer
 from resolver.resolver import StateResolver, format_markdown
 from store.store import DEFAULT_DB_PATH, ProfileStore, company_id_for
 
@@ -727,6 +728,32 @@ def cmd_status(args):
         store.close()
 
 
+def cmd_ask(args):
+    """Deterministic 'Ask Company' Q&A over the operating graph (Phase 4 Mode A floor)."""
+    with open(args.profile, "r", encoding="utf-8") as f:
+        profile_data = json.load(f)
+    inventory_snapshot = WorkspaceScanner().load_snapshot(Path(args.inventory))
+
+    answer = CompanyAnswerer().ask(args.question, profile_data, inventory_snapshot)
+
+    if args.format == "json":
+        print(json.dumps(asdict(answer), indent=2))
+    else:
+        print(answer.text)
+        if answer.citations:
+            print("\nCitations:")
+            for c in answer.citations:
+                print(f"  {c}")
+        if answer.confidence == "low":
+            print("\n[low confidence — deterministic fallback]")
+
+    _record_run(
+        args, "ask", asdict(answer),
+        summary=f"intent={answer.intent} confidence={answer.confidence}",
+        profile_data=profile_data,
+    )
+
+
 def cmd_dashboard(args):
     profile_path = Path(args.profile)
     with open(profile_path, "r", encoding="utf-8") as f:
@@ -868,7 +895,7 @@ def main():
     # history
     p_hist = subparsers.add_parser("history", help="List recorded engine runs from the store")
     p_hist.add_argument("--company-id", default=None, help="Filter by company")
-    p_hist.add_argument("--type", choices=["scan", "resolve", "gap", "compile", "guardian", "apply", "reverse"], default=None)
+    p_hist.add_argument("--type", choices=["scan", "resolve", "gap", "compile", "guardian", "apply", "reverse", "ask"], default=None)
     p_hist.add_argument("--run-id", type=int, default=None, help="Print a single run payload")
     p_hist.add_argument("--limit", type=int, default=20)
     p_hist.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
@@ -879,6 +906,16 @@ def main():
     p_status.add_argument("company_id", help="Company ID (domain slug)")
     p_status.add_argument("--db", default=None, help=f"SQLite DB path (default: {DEFAULT_DB_PATH})")
     p_status.set_defaults(func=cmd_status)
+
+    # ask
+    p_ask = subparsers.add_parser("ask", help="Deterministic Q&A over the operating graph (Ask Company)")
+    p_ask.add_argument("question", help="Question, e.g. 'do we have a master document register?'")
+    p_ask.add_argument("--profile", required=True, help="Path to company profile JSON")
+    p_ask.add_argument("--inventory", required=True, help="Path to workspace inventory JSON")
+    p_ask.add_argument("--format", choices=["markdown", "json"], default="markdown")
+    p_ask.add_argument("--record", action="store_true", help="Persist this run to the store")
+    p_ask.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
+    p_ask.set_defaults(func=cmd_ask)
 
     # dashboard
     p_dash = subparsers.add_parser("dashboard", help="Generate single-file interactive HTML readiness dashboard")

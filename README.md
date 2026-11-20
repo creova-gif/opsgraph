@@ -39,5 +39,6 @@ dump templates - never claim compliance. Delete is never allowed in v1.
 - [x] **Company Guardian Prototype (P2):** Continuous drift detection, staleness alerts, duplicate collisions, and weekly Health Digest (`guardian/`)
 - [x] **Persistent Store:** Versioned profiles, engine-run history (`--record`, `history`), and an append-only approval ledger — `approve`/`approvals` record decisions, `compile --require-approval` only compiles store-approved artifacts, automatic when the profile sets `governance.require_compile_approval` (`store/`)
 - [x] **Interactive Visual Dashboard:** Standalone single-file HTML report in the CALIBRATION design system — readiness numeral with tolerance band, gap matrix, domain scorecards, and drift feed (`dashboard/`)
+- [x] **Ask Company (deterministic floor):** `ask` answers questions about readiness, missing/stale artifacts, blockers, owners, and drift — grounded in engine output with citations, honest low-confidence fallback (`qa/`)
 - [x] **Pilot Offer Kit:** 48-Hour offer one-pager, delivery checklist, intake form (`docs/pilot/`)
 - [x] **Evidence Room:** 9-folder structure + draft YC application answers (`evidence-room/`)

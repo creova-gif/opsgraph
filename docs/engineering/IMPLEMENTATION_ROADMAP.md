@@ -77,6 +77,12 @@ with citations) → **Mode E Guardian** (scheduled/event-driven checks) →
 **Mode C Planning** → **Mode D Execution**. Modes F/G (specialist workforce,
 multi-agent) stay out until at least one paying pilot exists.
 
+Mode A's deterministic floor is built: `opsgraph ask` resolves intent against
+the live operating graph (score, missing/stale artifacts, blockers, owners,
+drift) and cites artifact IDs, files, and event IDs. Consul synthesis layers
+on top once Phase 3 is live; the retrieval/citation layer is the grounding
+source either way.
+
 ## Phase 5 — Commercial SaaS
 
 Multi-tenant Postgres, org/user/roles, OAuth session management, encrypted
