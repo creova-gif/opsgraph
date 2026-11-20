@@ -247,6 +247,49 @@ a stamp hitting paper, a needle settling — never like SaaS micro-interactions.
 - Honest marks — anything simulated, pending, or previewed is tagged
   `[SIMULATION]` and never animates.
 
+## 10c. Components (product UI spec)
+
+- **Ledger row** — the canonical data row: 36px, hairline separators, no row
+  fill except the flagged row (sunk-paper `#F3F0E9` + `◆` diamond, never a
+  full orange bar). Artifact IDs render spec blue — the reference, not the
+  alarm. One accent per row.
+- **Actions** — mono-bracketed, two weights only: ink fill = the consequential
+  move, hairline ghost = inspection, dashed = gated/unavailable. Never pills,
+  never shadows, never two fills in one row.
+- **Status tags** — outlined brackets, never filled; the text is the signal.
+  Dashed border reserved for `[SIMULATION]` / not-real output.
+- **Fields** — hairline underlines, not boxed inputs. Errors tint the rule
+  reject-red with a one-line Instrument Sans note.
+- **Chart** — the tolerance band: one ink baseline, muted bars, pass-green
+  only inside the band. Flat bars; no gradients, no donut charts.
+- **States** — left-border strips (green = recorded, orange = drift) and a
+  dashed `[NO GAPS]` empty state that stays empty on purpose.
+
+## 10d. Motion (mechanical, not fluid)
+
+- **Tokens**: `detent` 90ms steps(1,end) — state flips · `settle` 200ms
+  cubic-bezier(.2,.9,.3,1) — needle/values · `sweep` 320ms
+  cubic-bezier(.16,1,.3,1) — observed→required snap · `still` ∞ — simulation.
+- **Four moves that exist**: needle settle (one overshoot max), flag step
+  (instant, not fade), observed→required snap (the relief moment, once per
+  view), pointer-answering instruments via `@lucasmarkes/hairline` (web only).
+- **The law**: `[SIMULATION]` and dry-run output never animate — motion =
+  real data, stillness = not real yet.
+- Honor `prefers-reduced-motion` — needle jumps to value, snap becomes a swap.
+- Never: springy easings, number tickers, skeleton shimmer, motion on the
+  certificate.
+
+## 10e. Templates (the field kit)
+
+- **Deck** — 16:9, certificate header top, one claim left, rev/date/confidential
+  footer. No bullet walls.
+- **Doc / one-pager** — portrait, spec header + version, facts always in the
+  ledger table, findings as left-rule blocks.
+- **Social / OG card** — 1200×630, the only sanctioned dark surface: ink
+  field, paper text, the quiet numeral + one status tag.
+- **Icons** — the mark drops to its essence (dial dot + band) below 24px;
+  ticks die at small size, the essence survives.
+
 ## 11. Banned / never-ship list
 
 Purple in any role · gradients · glow/neon · near-black dark mode · pill
@@ -267,7 +310,10 @@ simulation markers · more than one accent in a component.
 | Type stack | Cabinet Grotesk / Instrument Sans / JetBrains Mono | All free and verified loadable; replaces Claude Code's banned-display Fraunces and paid Söhne/Berkeley |
 | Light mode only | v1 | Kills the category's dark-glow temptation entirely |
 | Interactive figures | `@lucasmarkes/hairline` line-instruments on web | User suggestion — pointer-responsive line-art fits the instrument metaphor without adding chrome |
-| Paper brand kit | `OpsGraph — Brand Identity Kit` (5 boards) | Visual source of truth alongside this file; tokens sync both directions |
+| Paper brand kit | `OpsGraph — Brand Identity Kit` (11 boards) | Visual source of truth alongside this file; tokens sync both directions |
+| Component spec | Ledger row 36px, bracket actions, outlined tags, hairline fields | Kit board 08 — production tokens, not mood |
+| Motion | Mechanical detents; stillness = not-real | Kit board 09 — instrument movement, not fluid easing |
+| Templates | Deck/doc/OG-card/icon as locked starting points | Kit board 10 — four artifacts that carry the brand |
 
 *Researched: Vanta, Linear, Attio, Plain (Drata bot-walled). Category converges
 on dense vigilance marketing; nobody sells relief. OpsGraph's differentiator is
