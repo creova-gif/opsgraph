@@ -87,7 +87,10 @@ Mode C's deterministic floor is built too: `opsgraph plan` orders every
 actionable gap into P0 critical-path → P1–P3 phases in the resolver's
 dependency order, annotating which steps block on which. Consul synthesis
 layers on top once Phase 3 is live; retrieval, citations, deltas, and
-order constraints stay the grounding source either way.
+order constraints stay the grounding source either way. Mode D's floor is
+the linkage between them: `apply --from-plan <run_id>` executes a recorded
+plan's ordered steps through the unchanged approval gate — plan defines
+scope, the decision ledger still defines permission.
 
 ## Phase 5 — Commercial SaaS
 

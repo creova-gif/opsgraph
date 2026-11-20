@@ -354,8 +354,8 @@ def cmd_apply(args):
 
     approved_set = None
     governed = bool((profile_data.get("governance") or {}).get("require_compile_approval"))
+    db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
     if governed:
-        db_path = Path(args.db) if args.db else DEFAULT_DB_PATH
         store = ProfileStore(db_path)
         try:
             approved = store.approved_artifact_ids(company_id_for(profile_data))
@@ -363,6 +363,23 @@ def cmd_apply(args):
             store.close()
         approved_set = None if "*" in approved else approved
         print("governance: require_compile_approval enabled by profile — unapproved artifacts will be held")
+
+    plan_scope = None
+    if args.from_plan is not None:
+        store = ProfileStore(db_path)
+        try:
+            run = store.get_run(args.from_plan)
+        finally:
+            store.close()
+        if not run or run["run_type"] != "plan":
+            sys.stderr.write(f"Error: run #{args.from_plan} is not a recorded plan run\n")
+            sys.exit(1)
+        plan_scope = [s["artifact_id"] for s in run["payload"].get("steps", [])]
+        print(f"scope: plan run #{run['id']} — {len(plan_scope)} ordered steps")
+        if approved_set is not None:
+            approved_set = approved_set & set(plan_scope)
+        else:
+            approved_set = set(plan_scope)
 
     plan = compiler.plan(
         profile_data=profile_data,
@@ -918,6 +935,7 @@ def main():
     p_apply = subparsers.add_parser("apply", help="Apply an approved compilation plan to a real Google Drive (create-only, audited)")
     p_apply.add_argument("profile", nargs="?", help="Path to company profile JSON (not needed with --reverse)")
     p_apply.add_argument("--reverse", type=int, metavar="RUN_ID", help="Reverse a recorded apply run — trash exactly the IDs it created")
+    p_apply.add_argument("--from-plan", type=int, metavar="RUN_ID", help="Scope the apply to a recorded plan run's ordered artifact steps")
     p_apply.add_argument("--credentials", help="OAuth client_secret or service_account JSON (Drive write scope)")
     p_apply.add_argument("--token", help="Cached OAuth token path (created on first run)")
     p_apply.add_argument("--impersonate", help="Workspace admin user for service-account domain delegation")

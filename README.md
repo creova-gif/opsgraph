@@ -43,5 +43,6 @@ dump templates - never claim compliance. Delete is never allowed in v1.
 - [x] **Guardian Delta:** `digest <company_id>` diffs the last two recorded guardian runs — new/resolved/persistent drift events, severity escalations, and health-score movement (`guardian/digest.py`)
 - [x] **Remediation Plan (deterministic floor):** `plan` orders every actionable gap into P0 critical-path → P1–P3 phases in resolver dependency order, with blocked-by annotations (`plan/`)
 - [x] **Readiness Certificate:** `certificate` renders the CALIBRATION-series cert from real engine output — score, ruleset version, flag counts, approver chain; certifies a measurement, not compliance (`certificate/`)
+- [x] **Plan-driven Apply (Mode D floor):** `apply --from-plan <run_id>` scopes a Drive apply to a recorded plan's ordered steps — the approval ledger gate stays fully intact
 - [x] **Pilot Offer Kit:** 48-Hour offer one-pager, delivery checklist, intake form (`docs/pilot/`)
 - [x] **Evidence Room:** 9-folder structure + draft YC application answers (`evidence-room/`)
