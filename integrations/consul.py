@@ -18,6 +18,7 @@ class AgentRunResult:
     provider: str
     simulation: bool
     usage: Dict[str, Any] = field(default_factory=dict)
+    core_version: str = ""  # X-Consul-Core-Version response header; "" when absent
 
 
 class ConsulUnavailable(Exception):
@@ -26,26 +27,29 @@ class ConsulUnavailable(Exception):
 
 class ConsulClient:
     def run_agent(self, skill: str, inputs: dict, company_id: str,
-                  idempotency_key: str) -> AgentRunResult:
+                  idempotency_key: str, policy: dict | None = None) -> AgentRunResult:
         raise NotImplementedError
 
 
 class HTTPConsulClient(ConsulClient):
-    def __init__(self, base_url: str, token: str):
+    def __init__(self, base_url: str, token: str, timeout: float = 30.0):
         self.base_url = base_url.rstrip("/")
         self.token = token
+        self.timeout = timeout
 
     def run_agent(self, skill: str, inputs: dict, company_id: str,
-                  idempotency_key: str) -> AgentRunResult:
-        body = json.dumps({
+                  idempotency_key: str, policy: dict | None = None) -> AgentRunResult:
+        payload = {
             "skill": skill,
             "inputs": inputs,
             "company_id": company_id,
             "idempotency_key": idempotency_key,
-        }).encode("utf-8")
+        }
+        if policy is not None:
+            payload["policy"] = policy
         req = urllib.request.Request(
             f"{self.base_url}/v1/agent-runs",
-            data=body,
+            data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Authorization": f"Bearer {self.token}",
                 "Content-Type": "application/json",
@@ -53,17 +57,23 @@ class HTTPConsulClient(ConsulClient):
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req) as resp:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
-        except (urllib.error.URLError, urllib.error.HTTPError) as e:
+                core_version = resp.headers.get("X-Consul-Core-Version", "")
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
             raise ConsulUnavailable(str(e)) from e
+        # `simulation` is contract-required: a missing flag would let canned
+        # output pass as real model work. Treat absence as a bad response.
+        if "simulation" not in data:
+            raise ConsulUnavailable("consul-core v1 response missing required field: simulation")
         return AgentRunResult(
             run_id=data.get("run_id", ""),
             status=data.get("status", ""),
             output=data.get("output", {}),
             provider=data.get("provider", ""),
-            simulation=data.get("simulation", False),
+            simulation=data["simulation"],
             usage=data.get("usage", {}),
+            core_version=core_version,
         )
 
 
@@ -90,7 +100,7 @@ class StubConsulClient(ConsulClient):
     """Deterministic local stand-in used when no Consul endpoint is configured."""
 
     def run_agent(self, skill: str, inputs: dict, company_id: str,
-                  idempotency_key: str) -> AgentRunResult:
+                  idempotency_key: str, policy: dict | None = None) -> AgentRunResult:
         category = inputs.get("category") or inputs.get("event_type") or "UNKNOWN"
         target = (inputs.get("affected_file") or inputs.get("affected_artifact_id")
                   or inputs.get("title") or "the flagged item")

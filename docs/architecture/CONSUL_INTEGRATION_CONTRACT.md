@@ -1,7 +1,8 @@
 # OpsGraph–Consul Integration Contract
 
-**Status:** draft v0.1 — no code consumes this contract yet. It exists so Consul
-and OpsGraph can be built in parallel against the same surface.
+**Status:** draft v0.2 — OpsGraph client-side implemented (`integrations/consul.py`:
+`HTTPConsulClient` + `StubConsulClient`; `guardian --propose` consumes it).
+Consul's server side does not exist yet; it can be built against this surface.
 **Grounded in:** `docs/audits/CONSUL_CURRENT_STATE.md`, `docs/audits/OPSGRAPH_CURRENT_STATE.md`.
 
 ## Why this document exists

@@ -38,8 +38,9 @@ def _event(category, **overrides):
 
 
 class _FakeResponse:
-    def __init__(self, payload):
+    def __init__(self, payload, headers=None):
         self._buf = io.BytesIO(json.dumps(payload).encode("utf-8"))
+        self.headers = headers or {}
 
     def read(self):
         return self._buf.getvalue()
@@ -162,6 +163,56 @@ class TestHTTPConsulClient(unittest.TestCase):
             client = HTTPConsulClient("http://localhost:9", "tok")
             with self.assertRaises(ConsulUnavailable):
                 client.run_agent("guardian-remediation", {}, "acme", "k1")
+
+    def test_timeout_passed_to_urlopen(self):
+        payload = {"run_id": "r1", "status": "completed", "output": {},
+                   "provider": "p", "simulation": False}
+        with patch("urllib.request.urlopen", return_value=_FakeResponse(payload)) as mock_open:
+            HTTPConsulClient("http://x", "tok", timeout=12.5).run_agent(
+                "guardian-remediation", {}, "acme", "k1"
+            )
+        self.assertEqual(mock_open.call_args.kwargs["timeout"], 12.5)
+
+    def test_missing_simulation_field_is_rejected(self):
+        # contract requires an explicit simulation flag; absent must not
+        # silently read as False or canned output could pass as real work
+        payload = {"run_id": "r1", "status": "completed", "output": {},
+                   "provider": "gemini-2.0-flash"}
+        with patch("urllib.request.urlopen", return_value=_FakeResponse(payload)):
+            client = HTTPConsulClient("http://x", "tok")
+            with self.assertRaises(ConsulUnavailable):
+                client.run_agent("guardian-remediation", {}, "acme", "k1")
+
+    def test_core_version_header_captured(self):
+        payload = {"run_id": "r1", "status": "completed", "output": {},
+                   "provider": "p", "simulation": False}
+        resp = _FakeResponse(payload, headers={"X-Consul-Core-Version": "1.4.0"})
+        with patch("urllib.request.urlopen", return_value=resp):
+            result = HTTPConsulClient("http://x", "tok").run_agent(
+                "guardian-remediation", {}, "acme", "k1"
+            )
+        self.assertEqual(result.core_version, "1.4.0")
+
+    def test_policy_forwarded_when_set(self):
+        payload = {"run_id": "r1", "status": "completed", "output": {},
+                   "provider": "p", "simulation": False}
+        with patch("urllib.request.urlopen", return_value=_FakeResponse(payload)) as mock_open:
+            HTTPConsulClient("http://x", "tok").run_agent(
+                "guardian-remediation", {}, "acme", "k1",
+                policy={"max_tokens": 2000, "timeout_seconds": 60},
+            )
+        body = json.loads(mock_open.call_args[0][0].data.decode("utf-8"))
+        self.assertEqual(body["policy"]["max_tokens"], 2000)
+
+    def test_policy_omitted_when_none(self):
+        payload = {"run_id": "r1", "status": "completed", "output": {},
+                   "provider": "p", "simulation": False}
+        with patch("urllib.request.urlopen", return_value=_FakeResponse(payload)) as mock_open:
+            HTTPConsulClient("http://x", "tok").run_agent(
+                "guardian-remediation", {}, "acme", "k1"
+            )
+        body = json.loads(mock_open.call_args[0][0].data.decode("utf-8"))
+        self.assertNotIn("policy", body)
 
 
 if __name__ == "__main__":

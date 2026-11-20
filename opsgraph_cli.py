@@ -577,6 +577,12 @@ def cmd_guardian(args):
             try:
                 result = client.run_agent("guardian-remediation", inputs=asdict(event),
                                           company_id=company_id, idempotency_key=key)
+                if result.status != "completed":
+                    sys.stderr.write(
+                        f"Consul run {result.run_id or '?'} returned status "
+                        f"'{result.status or 'unknown'}'; falling back to local simulation\n"
+                    )
+                    raise ConsulUnavailable(f"run status {result.status!r}")
             except ConsulUnavailable as e:
                 sys.stderr.write(f"Consul unavailable ({e}); falling back to local simulation\n")
                 client = StubConsulClient()
@@ -585,8 +591,10 @@ def cmd_guardian(args):
             proposals.append({
                 "run_id": result.run_id,
                 "skill": "guardian-remediation",
+                "status": result.status,
                 "simulation": result.simulation,
                 "provider": result.provider,
+                "core_version": result.core_version,
                 "event_type": event.category,
                 "output": result.output,
             })
