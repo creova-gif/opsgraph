@@ -337,7 +337,10 @@ names the same set. Nothing external ships from a screenshot.
   surface/reject contracts as data; matches the board 07 tokens block.
 - `docs/design/favicon/{16,32}.png` — rasterized from the mark essence;
   heavier stroke, paper ground (readable in dark browser chrome).
-- Certificate PDF pending a real template.
+- `docs/design/certificate.html` + `certificate-og001.pdf` — the readiness
+  certificate as a calibration record (letter landscape): cert strip, mark,
+  numeral block, field grid, three attestation columns. Certifies a
+  measurement, never compliance.
 
 ## 11. Banned / never-ship list
 
