@@ -290,6 +290,38 @@ a stamp hitting paper, a needle settling — never like SaaS micro-interactions.
 - **Icons** — the mark drops to its essence (dial dot + band) below 24px;
   ticks die at small size, the essence survives.
 
+## 10f. Website (production specimen — board 11)
+
+- **Page architecture** — certificate strip (CERT OG-001 · REV B /
+  INSTRUMENT OF OPERATIONAL READINESS) → nav (mark lockup, Instrument Sans
+  links, `[ REQUEST PILOT ]` ink-fill CTA) → asymmetric hero →
+  observed/required transformation → four-step method strip → mono footer.
+- **Hero** — headline left ("Operational infrastructure, measured."),
+  line-drawn gauge right on `sunk` ground; `[IN TOLERANCE]`/`[DRIFT +12]`
+  tags beneath the numeral.
+- **Method strip** — four columns, mono step tags `01 — SCAN` … `04 —
+  GUARD`, hairline dividers; GUARD's tag is `pass`, the rest `spec`.
+- **App surface** — the same system at dashboard width: numeral + tolerance
+  band left rail (340px), drift ledger right; flagged rows on `sunk` with ◆;
+  `[SIMULATION]` dashed tag on pending/simulated rows; audit line + `[
+  APPROVE PLAN ]` footer.
+
+## 10g. Mobile (390px specimens — board 12)
+
+- **Priority order** — numeral leads, ledger compresses, tags hold meaning;
+  nothing else competes above the fold.
+- **Dashboard** — numeral 72px, tolerance band 5px, ledger rows single-line
+  truncated, full-width `[ REVIEW DRIFT ]` ink CTA.
+- **Drift event** — artifact ID + `[CATEGORY]` tag in chrome; proposal card
+  always carries its `[SIMULATION]` dashed tag; actions are `[ APPROVE ]`
+  (ink) / `[ DISMISS ]` (ghost).
+- **Approvals** — decision rows with action type in muted mono (`compile` /
+  `remediate` / `reverse`); destructive confirmation uses `reject` fill
+  (`[ CONFIRM ]` on #C73E1D) — the only place red is a fill, not an
+  outline.
+- **Chrome** — 1.5px ink viewport frame; Instrument Sans chrome text; safe
+  single-column throughout.
+
 ## 11. Banned / never-ship list
 
 Purple in any role · gradients · glow/neon · near-black dark mode · pill
@@ -310,10 +342,12 @@ simulation markers · more than one accent in a component.
 | Type stack | Cabinet Grotesk / Instrument Sans / JetBrains Mono | All free and verified loadable; replaces Claude Code's banned-display Fraunces and paid Söhne/Berkeley |
 | Light mode only | v1 | Kills the category's dark-glow temptation entirely |
 | Interactive figures | `@lucasmarkes/hairline` line-instruments on web | User suggestion — pointer-responsive line-art fits the instrument metaphor without adding chrome |
-| Paper brand kit | `OpsGraph — Brand Identity Kit` (11 boards) | Visual source of truth alongside this file; tokens sync both directions |
+| Paper brand kit | `OpsGraph — Brand Identity Kit` (13 boards) | Visual source of truth alongside this file; tokens sync both directions |
 | Component spec | Ledger row 36px, bracket actions, outlined tags, hairline fields | Kit board 08 — production tokens, not mood |
 | Motion | Mechanical detents; stillness = not-real | Kit board 09 — instrument movement, not fluid easing |
 | Templates | Deck/doc/OG-card/icon as locked starting points | Kit board 10 — four artifacts that carry the brand |
+| Web surfaces | Landing hero (gauge) + app dashboard (numeral) at production width | Kit board 11 — page architecture locked: cert strip → hero → transformation → method → footer |
+| Mobile | Numeral leads; reject-fill only on destructive confirm | Kit board 12 — three 390px specimens: dashboard, drift event, approvals |
 
 *Researched: Vanta, Linear, Attio, Plain (Drata bot-walled). Category converges
 on dense vigilance marketing; nobody sells relief. OpsGraph's differentiator is
