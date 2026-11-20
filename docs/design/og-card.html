@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OpsGraph — OG card</title>
+<meta name="robots" content="noindex">
+<link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@400,500,700,800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F5F0; --ink:#1B1A17; --ink-muted:#6B6459;
+    --hairline:#DEDACF; --paper-dim:#B9B4A8;
+    --pass:#1B7F4E; --pass-bright:#3FA870;
+    --font-display:"Cabinet Grotesk",sans-serif;
+    --font-mono:"JetBrains Mono",monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{overflow:hidden}
+  body{background:var(--ink);color:var(--paper);font-family:var(--font-display);
+       width:1200px;height:630px;-webkit-font-smoothing:antialiased}
+  .mono{font-family:var(--font-mono)}
+
+  .card{width:1200px;height:630px;padding:52px 64px;position:relative;
+        display:flex;flex-direction:column}
+  .frame{position:absolute;inset:24px;border:1px solid rgba(247,245,240,.28);
+         pointer-events:none}
+
+  .top{display:flex;justify-content:space-between;align-items:baseline;
+       font-size:12px;letter-spacing:.08em;color:var(--paper-dim)}
+
+  .middle{flex:1;display:flex;align-items:center;gap:64px}
+  .mark svg{width:148px;height:148px}
+  .headline h1{font-weight:800;font-size:84px;line-height:.98;letter-spacing:-.015em}
+  .headline .sub{margin-top:22px;font-family:var(--font-mono);font-size:15px;
+                 letter-spacing:.05em;color:var(--paper-dim)}
+
+  .numeral-col{margin-left:auto;text-align:right;border-left:1px solid rgba(247,245,240,.22);
+               padding-left:56px}
+  .num-label{font-family:var(--font-mono);font-size:12px;letter-spacing:.08em;
+             color:var(--paper-dim)}
+  .numeral{font-weight:800;font-size:150px;line-height:.9;letter-spacing:-.03em;
+           font-variant-numeric:tabular-nums}
+  .tolerance{width:130px;height:3px;background:rgba(247,245,240,.22);position:relative;
+             margin:16px 0 0 auto}
+  .tolerance::after{content:"";position:absolute;right:0;top:0;height:100%;width:27%;
+                    background:var(--pass-bright)}
+  .tag{display:inline-block;margin-top:16px;padding:5px 9px;
+       border:1px solid var(--pass-bright);font-family:var(--font-mono);
+       font-size:12px;letter-spacing:.05em;color:var(--pass-bright)}
+
+  .bottom{display:flex;justify-content:space-between;align-items:baseline;
+          font-family:var(--font-mono);font-size:12px;letter-spacing:.07em;
+          color:var(--paper-dim)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="frame"></div>
+
+  <div class="top mono">
+    <span>CERT OG-001 · REV B</span>
+    <span>INSTRUMENT OF OPERATIONAL READINESS</span>
+  </div>
+
+  <div class="middle">
+    <div class="mark">
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r="21" fill="none" stroke="#F7F5F0" stroke-width="2.5"/>
+        <line x1="24" y1="4.5" x2="24" y2="9" stroke="#F7F5F0" stroke-width="2.5"/>
+        <line x1="41" y1="12" x2="37" y2="14.5" stroke="#F7F5F0" stroke-width="2.5"/>
+        <line x1="41" y1="36" x2="37" y2="33.5" stroke="#F7F5F0" stroke-width="2.5"/>
+        <line x1="24" y1="43.5" x2="24" y2="39" stroke="#F7F5F0" stroke-width="2.5"/>
+        <line x1="7" y1="36" x2="11" y2="33.5" stroke="#F7F5F0" stroke-width="2.5"/>
+        <line x1="24" y1="24" x2="34" y2="12" stroke="#F7F5F0" stroke-width="2.5"/>
+        <circle cx="24" cy="24" r="3" fill="#F7F5F0"/>
+      </svg>
+    </div>
+    <div class="headline">
+      <h1>Operational<br>infrastructure,<br>measured.</h1>
+      <div class="sub">[OBSERVED] &rarr; [REQUIRED] — chaos converted to spec</div>
+    </div>
+    <div class="numeral-col">
+      <div class="num-label">READINESS</div>
+      <div class="numeral">87</div>
+      <div class="tolerance"></div>
+      <span class="tag">[IN TOLERANCE]</span>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <span>OPSGRAPH / CALIBRATION SERIES</span>
+    <span>SCAN · COMPILE · APPLY · GUARD</span>
+  </div>
+</div>
+</body>
+</html>
