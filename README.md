@@ -42,5 +42,6 @@ dump templates - never claim compliance. Delete is never allowed in v1.
 - [x] **Ask Company (deterministic floor):** `ask` answers questions about readiness, missing/stale artifacts, blockers, owners, and drift — grounded in engine output with citations, honest low-confidence fallback (`qa/`)
 - [x] **Guardian Delta:** `digest <company_id>` diffs the last two recorded guardian runs — new/resolved/persistent drift events, severity escalations, and health-score movement (`guardian/digest.py`)
 - [x] **Remediation Plan (deterministic floor):** `plan` orders every actionable gap into P0 critical-path → P1–P3 phases in resolver dependency order, with blocked-by annotations (`plan/`)
+- [x] **Readiness Certificate:** `certificate` renders the CALIBRATION-series cert from real engine output — score, ruleset version, flag counts, approver chain; certifies a measurement, not compliance (`certificate/`)
 - [x] **Pilot Offer Kit:** 48-Hour offer one-pager, delivery checklist, intake form (`docs/pilot/`)
 - [x] **Evidence Room:** 9-folder structure + draft YC application answers (`evidence-room/`)

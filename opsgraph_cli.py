@@ -30,6 +30,7 @@ from compiler.drive_apply import (
     plan_apply,
     plan_reverse,
 )
+from certificate.generator import CertificateGenerator
 from dashboard.generator import DashboardGenerator
 from dashboard.server import serve_dashboard
 from demo.run_demo import run_full_demo
@@ -804,6 +805,22 @@ def cmd_digest(args):
         print(f"\n(runs #{previous['id']} → #{latest['id']})")
 
 
+def cmd_certificate(args):
+    """Generate the Operational Readiness Certificate from real engine output."""
+    with open(args.profile, "r", encoding="utf-8") as f:
+        profile_data = json.load(f)
+    inventory_snapshot = WorkspaceScanner().load_snapshot(Path(args.inventory))
+
+    html = CertificateGenerator().generate(
+        profile_data, inventory_snapshot,
+        approver=args.approver, run_ref=args.run_ref,
+    )
+    out = Path(args.output)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(html, encoding="utf-8")
+    print(f"certificate written: {out}")
+
+
 def cmd_dashboard(args):
     profile_path = Path(args.profile)
     with open(profile_path, "r", encoding="utf-8") as f:
@@ -982,6 +999,15 @@ def main():
     p_digest.add_argument("--format", choices=["markdown", "json"], default="markdown")
     p_digest.add_argument("--db", default=None, help=f"SQLite DB path (default: {DEFAULT_DB_PATH})")
     p_digest.set_defaults(func=cmd_digest)
+
+    # certificate
+    p_cert = subparsers.add_parser("certificate", help="Generate the Operational Readiness Certificate (single-file HTML)")
+    p_cert.add_argument("profile", help="Path to company profile JSON")
+    p_cert.add_argument("inventory", help="Path to workspace inventory JSON")
+    p_cert.add_argument("--output", default="certificate.html", help="Output HTML file path")
+    p_cert.add_argument("--approver", default=None, help="Approver identity for the CHAIN/approver field")
+    p_cert.add_argument("--run-ref", default=None, help="Run reference (e.g. 'run #7 / apply pending approval')")
+    p_cert.set_defaults(func=cmd_certificate)
 
     # dashboard
     p_dash = subparsers.add_parser("dashboard", help="Generate single-file interactive HTML readiness dashboard")
