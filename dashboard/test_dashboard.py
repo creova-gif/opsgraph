@@ -59,6 +59,29 @@ class TestDashboardGenerator(unittest.TestCase):
         self.assertIn("--paper: #F7F5F0", html)
         self.assertIn("--spec: #1F3FA0", html)
 
+    def test_design_tokens_single_source(self):
+        """Every color in tokens.json must reach the generated CSS :root."""
+        tokens_path = self.base_dir / "docs" / "design" / "tokens.json"
+        colors = json.loads(tokens_path.read_text(encoding="utf-8"))["color"]
+        html = self.generator.generate(
+            profile_data=self.profile,
+            inventory=self.inventory,
+        )
+        css_var = {
+            "muted": "ink-muted",
+            "specText": "spec-text",
+            "driftText": "drift-text",
+            "passText": "pass-text",
+            "rejectText": "reject-text",
+        }
+        for key, value in colors.items():
+            var = css_var.get(key, key)
+            self.assertIn(
+                f"--{var}: {value}",
+                html,
+                f"token {key} must emit --{var}: {value}",
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

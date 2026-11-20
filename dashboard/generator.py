@@ -25,6 +25,61 @@ from guardian.guardian import CompanyGuardian, HealthDigest
 from inventory.scanner import InventorySnapshot, WorkspaceScanner
 from resolver.resolver import ResolutionReport, StateResolver
 
+_TOKENS_PATH = BASE_DIR / "docs" / "design" / "tokens.json"
+
+# Baked CALIBRATION tokens — must mirror docs/design/tokens.json. Used when
+# the design assets aren't on disk (e.g. packaged installs).
+_FALLBACK_TOKENS: Dict[str, str] = {
+    "paper": "#F7F5F0",
+    "surface": "#FFFFFF",
+    "sunk": "#ECE8DF",
+    "ink": "#1B1A17",
+    "ink-muted": "#6B6459",
+    "hairline": "#DEDACF",
+    "grid": "#E7E3D8",
+    "spec": "#1F3FA0",
+    "spec-text": "#1F3FA0",
+    "drift": "#E8490F",
+    "drift-text": "#B8370B",
+    "pass": "#1B7F4E",
+    "pass-text": "#187246",
+    "reject": "#C73E1D",
+    "reject-text": "#9C2F15",
+}
+
+_TOKEN_KEY_MAP = {
+    "paper": "paper",
+    "surface": "surface",
+    "grid": "grid",
+    "sunk": "sunk",
+    "ink": "ink",
+    "muted": "ink-muted",
+    "hairline": "hairline",
+    "spec": "spec",
+    "specText": "spec-text",
+    "drift": "drift",
+    "driftText": "drift-text",
+    "pass": "pass",
+    "passText": "pass-text",
+    "reject": "reject",
+    "rejectText": "reject-text",
+}
+
+
+def _load_tokens() -> Dict[str, str]:
+    """Resolve CSS color tokens from docs/design/tokens.json when available."""
+    tokens = dict(_FALLBACK_TOKENS)
+    try:
+        raw = json.loads(_TOKENS_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return tokens
+    colors = raw.get("color", {})
+    for src_key, css_var in _TOKEN_KEY_MAP.items():
+        value = colors.get(src_key)
+        if isinstance(value, str) and value.startswith("#"):
+            tokens[css_var] = value
+    return tokens
+
 
 class DashboardGenerator:
     def __init__(
@@ -93,6 +148,7 @@ class DashboardGenerator:
 
         gap_json_str = json.dumps(gap).replace("</script>", "<\\/script>")
         guardian_json_str = json.dumps(guardian).replace("</script>", "<\\/script>")
+        tokens = _load_tokens()
 
         return f"""<!DOCTYPE html>
 <html lang="en">
@@ -106,21 +162,21 @@ class DashboardGenerator:
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@0,400;0,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {{
-      --paper: #F7F5F0;
-      --surface: #FFFFFF;
-      --sunk: #ECE8DF;
-      --ink: #1B1A17;
-      --ink-muted: #6B6459;
-      --hairline: #DEDACF;
-      --grid: #E7E3D8;
-      --spec: #1F3FA0;
-      --spec-text: #1F3FA0;
-      --drift: #E8490F;
-      --drift-text: #B8370B;
-      --pass: #1B7F4E;
-      --pass-text: #187246;
-      --reject: #C73E1D;
-      --reject-text: #9C2F15;
+      --paper: {tokens["paper"]};
+      --surface: {tokens["surface"]};
+      --sunk: {tokens["sunk"]};
+      --ink: {tokens["ink"]};
+      --ink-muted: {tokens["ink-muted"]};
+      --hairline: {tokens["hairline"]};
+      --grid: {tokens["grid"]};
+      --spec: {tokens["spec"]};
+      --spec-text: {tokens["spec-text"]};
+      --drift: {tokens["drift"]};
+      --drift-text: {tokens["drift-text"]};
+      --pass: {tokens["pass"]};
+      --pass-text: {tokens["pass-text"]};
+      --reject: {tokens["reject"]};
+      --reject-text: {tokens["reject-text"]};
       --font-display: "Cabinet Grotesk", sans-serif;
       --font-body: "Instrument Sans", sans-serif;
       --font-mono: "JetBrains Mono", monospace;
