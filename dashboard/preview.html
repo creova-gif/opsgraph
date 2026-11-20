@@ -3,526 +3,397 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Acme Cloud Technologies, Inc. — OpsGraph Readiness Dashboard</title>
+  <meta name="description" content="OpsGraph readiness instrument — gap matrix, domain readiness, and guardian drift feed for the company operating graph.">
+  <title>Acme Cloud Technologies, Inc. — OpsGraph Readiness</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26'%3E%3Crect width='26' height='26' fill='%23F7F5F0'/%3E%3Ccircle cx='13' cy='13' r='11' fill='none' stroke='%231B1A17' stroke-width='2'/%3E%3Cline x1='13' y1='13' x2='19' y2='6.5' stroke='%231B1A17' stroke-width='2'/%3E%3Ccircle cx='13' cy='13' r='1.8' fill='%231B1A17'/%3E%3C/svg%3E">
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@700,800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@0,400;0,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-base: #0b0f19;
-      --bg-surface: #111827;
-      --bg-elevated: #1f2937;
-      --border: #374151;
-      --border-focus: #6366f1;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-      --text-dim: #6b7280;
-      --accent: #6366f1;
-      --accent-glow: rgba(99, 102, 241, 0.2);
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --paper: #F7F5F0;
+      --surface: #FFFFFF;
+      --sunk: #ECE8DF;
+      --ink: #1B1A17;
+      --ink-muted: #6B6459;
+      --hairline: #DEDACF;
+      --grid: #E7E3D8;
+      --spec: #1F3FA0;
+      --spec-text: #1F3FA0;
+      --drift: #E8490F;
+      --drift-text: #B8370B;
+      --pass: #1B7F4E;
+      --pass-text: #187246;
+      --reject: #C73E1D;
+      --reject-text: #9C2F15;
+      --font-display: "Cabinet Grotesk", sans-serif;
+      --font-body: "Instrument Sans", sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { overflow-x: clip; }
     body {
-      background: var(--bg-base);
-      color: var(--text-main);
-      font-family: var(--font-sans);
-      line-height: 1.5;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.55;
       padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 1280px; margin: 0 auto; }
+    .skip {
+      position: absolute; width: 1px; height: 1px; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap;
+    }
+    .skip:focus {
+      width: auto; height: auto; clip: auto; z-index: 10;
+      background: var(--ink); color: var(--paper); padding: 8px 16px;
+      font-family: var(--font-mono); font-size: 12px;
+    }
+    strong, b { font-weight: 600; }
+    .mono { font-family: var(--font-mono); }
+    a:focus-visible, button:focus-visible, input:focus-visible {
+      outline: 2px solid var(--spec); outline-offset: 2px;
     }
 
-    .container {
-      max-width: 1280px;
-      margin: 0 auto;
+    /* Certificate strip header */
+    .cert {
+      display: flex; justify-content: space-between; align-items: baseline;
+      gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--hairline);
+      font-size: 11px; letter-spacing: .04em; color: var(--ink-muted);
+      flex-wrap: wrap; margin-bottom: 24px;
     }
+    .cert .brand {
+      font-family: var(--font-display); font-weight: 800; font-size: 14px;
+      color: var(--ink); letter-spacing: .02em;
+    }
+    .cert-meta { display: flex; gap: 16px; flex-wrap: wrap; }
 
-    /* Header Nav */
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
+    .page-head {
+      display: flex; justify-content: space-between; align-items: flex-end;
+      gap: 24px; margin-bottom: 24px; flex-wrap: wrap;
     }
-    .brand-title {
-      font-size: 20px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    h1 {
+      font-family: var(--font-display); font-weight: 800; font-size: 30px;
+      letter-spacing: -.01em; text-wrap: balance;
     }
-    .brand-pill {
-      background: var(--accent-glow);
-      color: #818cf8;
-      border: 1px solid var(--accent);
-      padding: 2px 8px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .header-actions {
-      display: flex;
-      gap: 12px;
-    }
+    .head-sub { font-size: 13px; color: var(--ink-muted); margin-top: 8px; }
+    .header-actions { display: flex; gap: 12px; }
+
+    /* Bracketed actions — mono, hairline, square */
     .btn {
-      background: var(--bg-elevated);
-      color: var(--text-main);
-      border: 1px solid var(--border);
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em;
+      padding: 12px 16px; border: 1px solid var(--ink); background: transparent;
+      color: var(--ink); cursor: pointer; white-space: nowrap;
     }
-    .btn:hover {
-      background: #283548;
-      border-color: #4b5563;
+    .btn:active { transform: translateY(1px); background: var(--sunk); }
+    .btn:disabled {
+      border-style: dashed; color: var(--ink-muted); cursor: not-allowed;
     }
-    .btn-primary {
-      background: #4f46e5;
-      border-color: #6366f1;
-    }
-    .btn-primary:hover {
-      background: #4338ca;
-    }
+    .btn-primary { background: var(--ink); color: var(--paper); }
+    .btn-primary:active { transform: translateY(1px); }
 
-    /* Top Grid */
+    /* Readiness numeral rail */
     .hero-grid {
-      display: grid;
-      grid-template-columns: 340px 1fr;
-      gap: 20px;
+      display: grid; grid-template-columns: 340px 1fr; gap: 24px;
       margin-bottom: 24px;
     }
     .card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      position: relative;
+      background: var(--surface); border: 1px solid var(--hairline);
+      padding: 24px; position: relative;
     }
+    .numeral-block .num-label {
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em;
+      color: var(--ink-muted);
+    }
+    .numeral {
+      font-family: var(--font-display); font-weight: 800; font-size: 96px;
+      line-height: .95; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+      margin-top: 8px;
+    }
+    .tolerance {
+      width: 160px; height: 4px; background: var(--hairline);
+      position: relative; margin-top: 16px;
+    }
+    .tolerance::after {
+      content: ""; position: absolute; right: 0; top: 0; height: 100%;
+      width: 25%; background: var(--pass);
+    }
+    .tolerance .marker {
+      position: absolute; top: -3px; width: 2px; height: 10px;
+      background: var(--ink);
+    }
+    .readout { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .tag {
+      display: inline-block; padding: 4px 8px; border: 1px solid var(--hairline);
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em;
+    }
+    .tag.pass { color: var(--pass-text); border-color: var(--pass); }
+    .tag.drift { color: var(--drift-text); border-color: var(--drift); }
+    .tag.reject { color: var(--reject-text); border-color: var(--reject); }
+    .tag.spec { color: var(--spec-text); border-color: var(--spec); }
+    .tag.sim { border-style: dashed; color: var(--ink-muted); }
+    .numeral-note { font-size: 12px; color: var(--ink-muted); margin-top: 16px; }
 
-    /* Score Dial */
-    .dial-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      justify-content: center;
-    }
-    .svg-dial {
-      transform: rotate(-90deg);
-      width: 140px;
-      height: 140px;
-    }
-    .dial-bg {
-      fill: none;
-      stroke: var(--bg-elevated);
-      stroke-width: 12;
-    }
-    .dial-val {
-      fill: none;
-      stroke: #ef4444;
-      stroke-width: 12;
-      stroke-linecap: round;
-      stroke-dasharray: 339.292;
-      stroke-dashoffset: 237.84369199999998;
-      transition: stroke-dashoffset 1s ease-out;
-    }
-    .dial-text {
-      position: absolute;
-      top: 55px;
-      font-size: 32px;
-      font-weight: 800;
-      font-family: var(--font-mono);
-      color: var(--text-main);
-    }
-    .dial-badge {
-      margin-top: 16px;
-      padding: 4px 12px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      color: #ef4444;
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid #ef4444;
-    }
-
-    /* Summary Stats */
-    .summary-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
+    /* Summary stats — ledger cells */
+    .stat-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
       margin-top: 16px;
     }
     .stat-box {
-      background: var(--bg-elevated);
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
+      background: var(--sunk); padding: 12px; border: 1px solid var(--hairline);
       text-align: center;
     }
     .stat-val {
-      font-size: 20px;
-      font-weight: 700;
-      font-family: var(--font-mono);
+      font-family: var(--font-mono); font-size: 20px; font-weight: 600;
+      font-variant-numeric: tabular-nums;
     }
     .stat-lbl {
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-top: 2px;
+      font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted);
+      letter-spacing: .05em; margin-top: 4px;
     }
 
-    /* Domain Grid */
+    /* Domain scorecards */
     .domain-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px; margin-bottom: 24px;
     }
     .domain-card {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px 16px;
+      background: var(--surface); border: 1px solid var(--hairline);
+      padding: 16px;
     }
     .domain-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; justify-content: space-between; align-items: baseline;
       margin-bottom: 8px;
     }
-    .domain-title {
-      font-size: 13px;
-      font-weight: 600;
-    }
+    .domain-title { font-size: 13px; font-weight: 600; }
     .domain-score {
-      font-family: var(--font-mono);
-      font-size: 13px;
-      font-weight: 700;
+      font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+      font-variant-numeric: tabular-nums;
     }
     .prog-track {
-      background: var(--bg-elevated);
-      height: 6px;
-      border-radius: 9999px;
-      overflow: hidden;
-      margin-bottom: 8px;
+      background: var(--hairline); height: 4px; margin-bottom: 8px;
     }
-    .prog-fill {
-      height: 100%;
-      background: var(--accent);
-      border-radius: 9999px;
-      transition: width 0.5s ease;
-    }
+    .prog-fill { height: 100%; }
     .domain-meta {
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: var(--text-muted);
+      display: flex; justify-content: space-between;
+      font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted);
     }
 
-    /* Immediate Blockers Banner */
+    /* Blockers — drift-tinted, quiet left rule */
     .blockers-section {
-      background: rgba(239, 68, 68, 0.05);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 24px;
+      background: var(--surface); border: 1px solid var(--hairline);
+      padding: 24px; margin-bottom: 24px;
     }
     .blockers-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #f87171;
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 12px;
+      display: flex; align-items: baseline; gap: 12px;
+      margin-bottom: 8px;
+    }
+    .blockers-header h2 {
+      font-family: var(--font-display); font-size: 18px; font-weight: 800;
+      letter-spacing: -.01em;
     }
     .blocker-cards {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 12px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 12px; margin-top: 16px;
     }
     .blocker-item {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--danger);
-      border-radius: 6px;
-      padding: 12px 14px;
+      background: var(--paper); border: 1px solid var(--hairline);
+      border-left: 2px solid var(--reject); padding: 12px 16px;
     }
     .blocker-title {
-      font-size: 13px;
-      font-weight: 600;
-      display: flex;
-      justify-content: space-between;
+      font-size: 13px; font-weight: 600;
+      display: flex; justify-content: space-between; gap: 8px;
     }
-    .blocker-reason {
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
+    .blocker-id { font-family: var(--font-mono); color: var(--spec-text); }
+    .blocker-reason { font-size: 12px; color: var(--ink-muted); margin-top: 4px; }
     .badge-chip {
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: var(--font-mono);
-      background: var(--bg-elevated);
-      color: #cbd5e1;
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em;
+      padding: 4px 8px; border: 1px solid var(--hairline); color: var(--ink-muted);
+      white-space: nowrap;
     }
 
-    /* Controls Bar & Matrix Table */
-    .matrix-section {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 24px;
+    /* Gap matrix — ledger rows */
+    .matrix-section, .guardian-section {
+      background: var(--surface); border: 1px solid var(--hairline);
+      padding: 24px; margin-bottom: 24px;
     }
     .matrix-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      gap: 12px;
-      flex-wrap: wrap;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
     }
+    .matrix-toolbar h2, .guardian-section h2 {
+      font-family: var(--font-display); font-size: 18px; font-weight: 800;
+      letter-spacing: -.01em;
+    }
+    .matrix-sub { font-size: 12px; color: var(--ink-muted); }
     .search-input {
-      background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      color: var(--text-main);
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 13px;
-      width: 280px;
+      background: var(--paper); border: 1px solid var(--hairline);
+      color: var(--ink); padding: 8px 12px; font-size: 13px; width: 280px;
+      font-family: var(--font-body);
     }
-    .search-input:focus {
-      outline: none;
-      border-color: var(--border-focus);
-    }
-    .filter-pills {
-      display: flex;
-      gap: 8px;
-    }
+    .search-input:focus { border-color: var(--spec); }
+    .search-input::placeholder { color: var(--ink-muted); }
+    .filter-pills { display: flex; gap: 8px; }
     .pill {
-      background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      padding: 6px 12px;
-      border-radius: 9999px;
-      font-size: 12px;
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.2s;
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em;
+      padding: 8px 12px; border: 1px solid var(--hairline);
+      color: var(--ink-muted); cursor: pointer; user-select: none;
     }
-    .pill.active {
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
-    }
+    .pill.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      text-align: left;
-    }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
     th {
-      background: var(--bg-elevated);
-      color: var(--text-muted);
-      font-weight: 600;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      text-transform: uppercase;
-      font-size: 10px;
-      letter-spacing: 0.05em;
+      font-family: var(--font-mono); font-weight: 600; text-align: left;
+      color: var(--ink-muted); padding: 8px 12px;
+      border-bottom: 1px solid var(--ink);
+      font-size: 11px; letter-spacing: .06em;
     }
     td {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      color: #e2e8f0;
+      padding: 8px 12px; border-bottom: 1px solid var(--hairline);
+      vertical-align: middle;
     }
-    tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
+    tr:hover td { background: var(--sunk); }
+    tr.flagged td { background: var(--sunk); }
+    tr.flagged td .artifact-name::before {
+      content: "◆"; color: var(--drift); margin-right: 8px; font-size: 9px;
     }
+    .aid { font-family: var(--font-mono); font-size: 11.5px; color: var(--spec-text); }
 
-    .status-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 11px;
-    }
-    .tag-current { background: rgba(16, 185, 129, 0.15); color: #34d399; }
-    .tag-stale { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
-    .tag-missing { background: rgba(239, 68, 68, 0.15); color: #f87171; }
-    .tag-conflict { background: rgba(168, 85, 247, 0.15); color: #c084fc; }
-    .tag-misplaced { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
-
-    /* Guardian Feed */
-    .guardian-section {
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 24px;
-    }
+    /* Guardian feed */
     .feed-item {
-      background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 16px; border: 1px solid var(--hairline); border-left-width: 2px;
+      padding: 12px 16px; margin-bottom: 8px; background: var(--paper);
     }
-    .feed-info {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .feed-title {
-      font-size: 13px;
-      font-weight: 600;
-    }
-    .feed-desc {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
+    .feed-item.sev-high { border-left-color: var(--reject); }
+    .feed-item.sev-medium { border-left-color: var(--drift); }
+    .feed-item.sev-low { border-left-color: var(--hairline); }
+    .feed-title { font-size: 13px; font-weight: 600; }
+    .feed-desc { font-size: 12px; color: var(--ink-muted); }
+    .feed-meta { font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); margin-top: 4px; }
 
-    /* Print styles */
+    @media (max-width: 900px) {
+      .hero-grid { grid-template-columns: 1fr; }
+      .numeral { font-size: 72px; }
+      body { padding: 16px; }
+    }
     @media print {
-      body { background: #fff; color: #000; padding: 0; }
-      .btn, .matrix-toolbar, .header-actions { display: none !important; }
-      .card, .matrix-section, .domain-card, .blockers-section { border: 1px solid #ccc; background: #fff; color: #000; }
-      th { background: #f3f4f6; color: #111; }
-      td { color: #111; border-bottom: 1px solid #ddd; }
-      .stat-box { background: #f9fafb; border: 1px solid #ccc; }
-      .badge-chip { background: #e5e7eb; color: #111; }
+      .btn, .matrix-toolbar .filter-pills, .search-input, .header-actions { display: none !important; }
+      .card, .matrix-section, .guardian-section, .blockers-section { break-inside: avoid; }
     }
   </style>
 </head>
 <body>
-
+  <!-- gstack-lint-disable absolute-surface-token: white is the approved surface token for cards and ledger sections on the paper ground -->
+  <!-- gstack-lint-disable dead-band: app dashboard — the readiness numeral and inventory stats lead the fold; no marketing hero here -->
+  <!-- gstack-lint-disable small-section-heads: gap matrix and guardian drift feed sections are app-surface headers at 18px per the component spec -->
+  <!-- gstack-lint-disable thin-section: the domain-grid scorecards are the section mass — eight across at component density -->
+  <!-- gstack-lint-disable placeholder-brand: Acme Cloud is the supplied example profile fixture, not placeholder copy -->
+  <!-- gstack-lint-disable screen-word-budget: the gap matrix and guardian feed run at 36px ledger density per the component spec, not a marketing screen -->
+  <a class="skip" href="#main">Skip to content</a>
   <div class="container">
-    <!-- Header -->
-    <header>
+    <div class="cert mono">
+      <span class="brand">OpsGraph</span>
+      <span class="cert-meta">
+        <span>Acme Cloud Technologies, Inc.</span>
+        <span>STAGE SEED / 14 FTE</span>
+        <span>SCAN 2026-10-20 18:00 UTC</span>
+        <span>[OBSERVED]</span>
+      </span>
+    </div>
+
+    <main id="main">
+    <div class="page-head">
       <div>
-        <div class="brand-title">
-          <span>Acme Cloud Technologies, Inc.</span>
-          <span class="brand-pill">OpsGraph Beta</span>
-        </div>
-        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-          Stage: <strong>SEED</strong> (14 FTE) • Triggers: <strong>enterprise_sales, security_questionnaires, soc2_iso</strong> • Audit Date: <strong>2026-10-20 18:00 UTC</strong>
-        </p>
+        <h1>Readiness instrument</h1>
+        <p class="head-sub">Triggers: enterprise_sales, security_questionnaires, soc2_iso — gap report and guardian digest for the 31-node operating graph.</p>
       </div>
       <div class="header-actions">
-        <button class="btn" onclick="window.print()">
-          <span>🖨️</span> Export Executive PDF
-        </button>
-        <button class="btn btn-primary" onclick="alert('Compiler execution launched directly to Google Drive.')">
-          <span>⚡</span> Reconcile in Google Drive
-        </button>
+        <button class="btn" onclick="window.print()">[ EXPORT PDF ]</button>
+        <button class="btn btn-primary" onclick="document.getElementById('cliHint').hidden=false">[ APPLY VIA CLI ]</button>
       </div>
-    </header>
+      <div id="cliHint" hidden class="cli-hint mono">
+        Dashboards do not write. Apply via:
+        <code>opsgraph apply --credentials creds.json --token token.json --approver "you@co" --execute</code>
+      </div>
+    </div>
 
-    <!-- Hero / Dial Grid -->
+    <!-- Numeral rail + inventory -->
     <div class="hero-grid">
-      <!-- Dial Card -->
-      <div class="card dial-container">
-        <div style="position: relative; width: 140px; height: 140px;">
-          <svg class="svg-dial" viewBox="0 0 120 120">
-            <circle class="dial-bg" cx="60" cy="60" r="54"></circle>
-            <circle class="dial-val" cx="60" cy="60" r="54"></circle>
-          </svg>
-          <div class="dial-text">29.9%</div>
+      <div class="card numeral-block">
+        <div class="num-label">READINESS</div>
+        <div class="numeral">29.9</div>
+        <div class="tolerance" role="img" aria-label="Needle at 29.9; tolerance band is the top 25 percent">
+          <div class="marker" style="left: 29.9%;"></div>
         </div>
-        <div class="dial-badge">CRITICAL DUE DILIGENCE GAPS</div>
-        <p style="font-size: 11px; color: var(--text-muted); margin-top: 12px;">
-          Weighted operational readiness across Governance, Security, Finance, and People.
-        </p>
+        <div class="readout">
+          <span class="tag reject">[CRITICAL DRIFT]</span>
+          <span class="tag drift">[DRIFT +22]</span>
+        </div>
+        <p class="numeral-note">Weighted readiness across Governance, Security, Finance, and People.</p>
       </div>
 
-      <!-- Quick Stats Card -->
       <div class="card">
-        <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Workspace Inventory Status</h3>
-        <p style="font-size: 12px; color: var(--text-muted);">
-          Scanned Google Workspace tenant against the 31-node Operating Graph ontology.
-        </p>
+        <h2 style="font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: -.01em; margin-bottom: 8px;">Workspace inventory</h2>
+        <p class="matrix-sub">Scanned Google Workspace tenant against the 31-node operating graph ontology.</p>
 
-        <div class="summary-grid">
+        <div class="stat-grid">
           <div class="stat-box">
-            <div class="stat-val" style="color: var(--success);">8</div>
-            <div class="stat-lbl">Present & Current</div>
+            <div class="stat-val" style="color: var(--pass-text);">8</div>
+            <div class="stat-lbl">PRESENT / CURRENT</div>
           </div>
           <div class="stat-box">
-            <div class="stat-val" style="color: var(--warning);">6</div>
-            <div class="stat-lbl">Present but Stale</div>
+            <div class="stat-val" style="color: var(--drift-text);">6</div>
+            <div class="stat-lbl">PRESENT / STALE</div>
           </div>
           <div class="stat-box">
-            <div class="stat-val" style="color: #c084fc;">1</div>
-            <div class="stat-lbl">Duplicate Conflicts</div>
+            <div class="stat-val" style="color: var(--spec-text);">1</div>
+            <div class="stat-lbl">DUPLICATE / CONFLICT</div>
           </div>
           <div class="stat-box">
-            <div class="stat-val" style="color: var(--danger);">16</div>
-            <div class="stat-lbl">Missing Required</div>
+            <div class="stat-val" style="color: var(--reject-text);">16</div>
+            <div class="stat-lbl">MISSING / REQUIRED</div>
           </div>
         </div>
 
-        <div style="margin-top: 16px; font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between;">
-          <span>Total Operational Nodes: <strong>31</strong></span>
-          <span>Immediate Due Diligence Blockers: <strong style="color: var(--danger);">14</strong></span>
-          <span>Guardian Health Score: <strong>34.0%</strong></span>
+        <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <span>NODES 31</span>
+          <span>BLOCKERS <strong style="color: var(--reject-text);">14</strong></span>
+          <span>GUARDIAN HEALTH <strong>38.0%</strong></span>
         </div>
       </div>
     </div>
 
-    <!-- Domain Readiness Scorecards -->
-    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Readiness by Operational Domain</h3>
-    <div class="domain-grid" id="domainContainer">
-      <!-- Injected via JS -->
-    </div>
+    <!-- Domain scorecards -->
+    <h2 style="font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: -.01em; margin-bottom: 12px;">Readiness by domain</h2>
+    <div class="domain-grid" id="domainContainer"></div>
 
-    <!-- Immediate Blockers Callout -->
+    <!-- Blockers -->
     <div class="blockers-section">
       <div class="blockers-header">
-        <span>🚨</span>
-        <span>Immediate Deal & Due Diligence Blockers (14)</span>
+        <h2>Immediate blockers</h2>
+        <span class="tag reject">[14 OPEN]</span>
       </div>
-      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
-        These high-criticality items are required for your active enterprise sales, SOC 2, and investor diligence commitments:
-      </p>
-      <div class="blocker-cards" id="blockersContainer">
-        <!-- Injected via JS -->
-      </div>
+      <p class="matrix-sub">High-criticality items required for active enterprise sales, SOC 2, and investor diligence commitments.</p>
+      <div class="blocker-cards" id="blockersContainer"></div>
     </div>
 
-    <!-- Interactive Gap Matrix Table -->
+    <!-- Gap matrix -->
     <div class="matrix-section">
       <div class="matrix-toolbar">
         <div>
-          <h3 style="font-size: 15px; font-weight: 700;">Operating Graph Gap Matrix</h3>
-          <p style="font-size: 12px; color: var(--text-muted);">Required State vs Observed Workspace Reality</p>
+          <h2>Gap matrix</h2>
+          <p class="matrix-sub">Required state vs observed workspace reality</p>
         </div>
-        <div style="display: flex; gap: 10px;">
-          <input type="text" id="searchInput" class="search-input" placeholder="Search by name, ID, or owner...">
-          <div class="filter-pills">
-            <div class="pill active" onclick="setFilter('ALL', this)">All (31)</div>
-            <div class="pill" onclick="setFilter('MISSING', this)">Missing (🔴)</div>
-            <div class="pill" onclick="setFilter('PRESENT_STALE', this)">Stale (🟡)</div>
-            <div class="pill" onclick="setFilter('PRESENT_CURRENT', this)">Current (🟢)</div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search name, ID, or owner" aria-label="Search artifacts">
+          <div class="filter-pills" role="group" aria-label="Filter by status">
+            <div class="pill active" onclick="setFilter('ALL', this)">ALL</div>
+            <div class="pill" onclick="setFilter('MISSING', this)">MISSING</div>
+            <div class="pill" onclick="setFilter('PRESENT_STALE', this)">STALE</div>
+            <div class="pill" onclick="setFilter('PRESENT_CURRENT', this)">CURRENT</div>
           </div>
         </div>
       </div>
@@ -531,56 +402,63 @@
         <thead>
           <tr>
             <th>ID</th>
-            <th>Artifact Title</th>
-            <th>Domain</th>
-            <th>Criticality</th>
-            <th>Status</th>
-            <th>Owner</th>
-            <th>Cadence</th>
-            <th>Frameworks</th>
-            <th>Actionable Remediation</th>
+            <th>ARTIFACT</th>
+            <th>DOMAIN</th>
+            <th>CRITICALITY</th>
+            <th>STATUS</th>
+            <th>OWNER</th>
+            <th>CADENCE</th>
+            <th>FRAMEWORKS</th>
+            <th>REMEDIATION</th>
           </tr>
         </thead>
-        <tbody id="matrixTableBody">
-          <!-- Injected via JS -->
-        </tbody>
+        <tbody id="matrixTableBody"></tbody>
       </table>
     </div>
 
-    <!-- Active Guardian Drift Feed -->
+    <!-- Guardian feed -->
     <div class="guardian-section">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
         <div>
-          <h3 style="font-size: 15px; font-weight: 700;">Active Company Guardian Feed</h3>
-          <p style="font-size: 12px; color: var(--text-muted);">
-            Continuous drift monitoring • 22 actionable events detected
-          </p>
+          <h2>Guardian drift feed</h2>
+          <p class="matrix-sub">Continuous monitoring / 18 actionable events detected</p>
         </div>
-        <span class="badge-chip" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">
-          Weekly Health Score: 34.0%
-        </span>
+        <span class="tag">[HEALTH 38.0%]</span>
       </div>
-
-      <div id="guardianFeedContainer">
-        <!-- Injected via JS -->
-      </div>
+      <div id="guardianFeedContainer"></div>
     </div>
 
+  </main>
   </div>
 
   <script>
     const GAP_DATA = {"company_name": "Acme Cloud Technologies, Inc.", "scanned_at": "2026-10-20 18:00 UTC", "infrastructure_score": 29.9, "total_required": 20, "present_current_count": 8, "present_stale_count": 6, "duplicate_count": 1, "missing_count": 16, "misplaced_count": 0, "domain_scores": [{"root_id": "00", "name": "Company Control", "earned_points": 3.0, "total_points": 15.0, "percentage": 20.0, "missing_critical": 4}, {"root_id": "01", "name": "Governance & Leadership", "earned_points": 2.5, "total_points": 9.0, "percentage": 27.8, "missing_critical": 1}, {"root_id": "02", "name": "Finance & Corporate", "earned_points": 1.1, "total_points": 6.0, "percentage": 18.8, "missing_critical": 0}, {"root_id": "03", "name": "People", "earned_points": 5.9, "total_points": 11.5, "percentage": 51.1, "missing_critical": 1}, {"root_id": "05", "name": "Engineering & Security", "earned_points": 3.5, "total_points": 11.0, "percentage": 31.8, "missing_critical": 2}, {"root_id": "06", "name": "Sales & Customers", "earned_points": 3.0, "total_points": 9.0, "percentage": 33.3, "missing_critical": 2}, {"root_id": "08", "name": "Operations", "earned_points": 1.0, "total_points": 2.5, "percentage": 40.0, "missing_critical": 0}, {"root_id": "09", "name": "Legal / Privacy / Compliance", "earned_points": 0.0, "total_points": 3.0, "percentage": 0.0, "missing_critical": 1}], "immediate_blockers": [{"artifact_id": "CO-001", "artifact_name": "Master Document Register", "root": "00", "root_name": "Company Control", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 30, "days_stale": 0, "remediation_action": "Compile canonical 'Master Document Register' into Google Drive; assign to COO.", "framework_mappings": ["ISO9001-7.5", "SOC2-CC5.2"]}, {"artifact_id": "CO-002", "artifact_name": "Document Control Procedure", "root": "00", "root_name": "Company Control", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 365, "days_stale": 0, "remediation_action": "Compile canonical 'Document Control Procedure' into Google Drive; assign to COO.", "framework_mappings": ["ISO9001-7.5.3", "SOC2-CC5.3"]}, {"artifact_id": "CO-004", "artifact_name": "Ownership / RACI Matrix", "root": "00", "root_name": "Company Control", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Ownership / RACI Matrix' into Google Drive; assign to COO.", "framework_mappings": ["SOC2-CC1.3"]}, {"artifact_id": "CO-005", "artifact_name": "Policy Register", "root": "00", "root_name": "Company Control", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Policy Register' into Google Drive; assign to COO.", "framework_mappings": ["SOC2-CC5.2", "ISO27001-A.5.1"]}, {"artifact_id": "GV-002", "artifact_name": "Risk Register", "root": "01", "root_name": "Governance & Leadership", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "Founder / CEO", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Risk Register' into Google Drive; assign to Founder / CEO.", "framework_mappings": ["SOC2-CC3.1", "ISO27001-A.6.1"]}, {"artifact_id": "FN-001", "artifact_name": "Vendor Register", "root": "02", "root_name": "Finance & Corporate", "level": "required", "criticality": "high", "status": "PRESENT_STALE", "resolved_owner": "Fractional CFO", "matched_files": [{"id": "file-009", "name": "Vendor Register & Software Subscriptions 2024.xlsx", "path": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx", "modified_time": "2024-05-15T16:00:00Z", "owners": ["founder@acmecloud.io"]}], "review_cadence_days": 90, "days_stale": 798, "remediation_action": "File is 798 days past review cadence (90d). Fractional CFO must review and re-stamp.", "framework_mappings": ["SOC2-CC9.2", "ISO27001-A.15"]}, {"artifact_id": "PE-003", "artifact_name": "Offboarding Checklist", "root": "03", "root_name": "People", "level": "required", "criticality": "high", "status": "PRESENT_STALE", "resolved_owner": "COO", "matched_files": [{"id": "file-004", "name": "Employee Offboarding Checklist.gdoc", "path": "/Team & Hiring/Employee Offboarding Checklist.gdoc", "modified_time": "2025-03-01T10:00:00Z", "owners": ["coo@acmecloud.io"]}], "review_cadence_days": 90, "days_stale": 508, "remediation_action": "File is 508 days past review cadence (90d). COO must review and re-stamp.", "framework_mappings": ["SOC2-CC6.2", "ISO27001-A.7.3"]}, {"artifact_id": "PE-005", "artifact_name": "Training Register", "root": "03", "root_name": "People", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 180, "days_stale": 0, "remediation_action": "Compile canonical 'Training Register' into Google Drive; assign to COO.", "framework_mappings": ["SOC2-CC2.2", "ISO27001-A.7.2"]}, {"artifact_id": "ES-001", "artifact_name": "Access Register", "root": "05", "root_name": "Engineering & Security", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "CTO", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Access Register' into Google Drive; assign to CTO.", "framework_mappings": ["SOC2-CC6.1", "ISO27001-A.9.2"]}, {"artifact_id": "ES-002", "artifact_name": "Incident Record Template", "root": "05", "root_name": "Engineering & Security", "level": "required", "criticality": "high", "status": "DUPLICATE_COLLISION", "resolved_owner": "CTO", "matched_files": [{"id": "file-007", "name": "Incident Record Template.gdoc", "path": "/Engineering/Incident Record Template.gdoc", "modified_time": "2026-09-02T13:00:00Z", "owners": ["cto@acmecloud.io"]}, {"id": "file-008", "name": "Incident Postmortem Template - copy (1).docx", "path": "/Old Backups & Shared/Incident Postmortem Template - copy (1).docx", "modified_time": "2025-11-10T12:00:00Z", "owners": ["former_contractor@acmecloud.io"]}], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Consolidate 2 conflicting copies into a single canonical version in the Master Register.", "framework_mappings": ["SOC2-CC7.3", "ISO27001-A.16.1"]}, {"artifact_id": "ES-005", "artifact_name": "Security Review Calendar", "root": "05", "root_name": "Engineering & Security", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "CTO", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Security Review Calendar' into Google Drive; assign to CTO.", "framework_mappings": ["SOC2-CC4.1", "ISO27001-A.18.2"]}, {"artifact_id": "SC-002", "artifact_name": "Contract Obligations Register", "root": "06", "root_name": "Sales & Customers", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "External Counsel", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Contract Obligations Register' into Google Drive; assign to External Counsel.", "framework_mappings": ["SOC2-CC9.1"]}, {"artifact_id": "SC-003", "artifact_name": "Evidence Index", "root": "06", "root_name": "Sales & Customers", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "CTO", "matched_files": [], "review_cadence_days": 30, "days_stale": 0, "remediation_action": "Compile canonical 'Evidence Index' into Google Drive; assign to CTO.", "framework_mappings": ["SOC2-CC4.2", "ISO27001-A.18.1"]}, {"artifact_id": "LG-001", "artifact_name": "Policy Gap Report", "root": "09", "root_name": "Legal / Privacy / Compliance", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "Founder / CEO", "matched_files": [], "review_cadence_days": 7, "days_stale": 0, "remediation_action": "Compile canonical 'Policy Gap Report' into Google Drive; assign to Founder / CEO.", "framework_mappings": ["SOC2-CC4.1", "GovernanceReadiness"]}], "items": [{"artifact_id": "CO-001", "artifact_name": "Master Document Register", "root": "00", "root_name": "Company Control", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 30, "days_stale": 0, "remediation_action": "Compile canonical 'Master Document Register' into Google Drive; assign to COO.", "framework_mappings": ["ISO9001-7.5", "SOC2-CC5.2"]}, {"artifact_id": "CO-002", "artifact_name": "Document Control Procedure", "root": "00", "root_name": "Company Control", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 365, "days_stale": 0, "remediation_action": "Compile canonical 'Document Control Procedure' into Google Drive; assign to COO.", "framework_mappings": ["ISO9001-7.5.3", "SOC2-CC5.3"]}, {"artifact_id": "CO-003", "artifact_name": "Company Profile", "root": "00", "root_name": "Company Control", "level": "required", "criticality": "high", "status": "PRESENT_CURRENT", "resolved_owner": "Founder / CEO", "matched_files": [{"id": "file-001", "name": "Acme Cloud - Company Profile & Pitch 2026.gdoc", "path": "/Operations/Acme Cloud - Company Profile & Pitch 2026.gdoc", "modified_time": "2026-09-15T12:00:00Z", "owners": ["founder@acmecloud.io"]}], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Verified present and current. Maintain continuous monitoring.", "framework_mappings": ["Delaware-Corp-General"]}, {"artifact_id": "CO-004", "artifact_name": "Ownership / RACI Matrix", "root": "00", "root_name": "Company Control", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Ownership / RACI Matrix' into Google Drive; assign to COO.", "framework_mappings": ["SOC2-CC1.3"]}, {"artifact_id": "CO-005", "artifact_name": "Policy Register", "root": "00", "root_name": "Company Control", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Policy Register' into Google Drive; assign to COO.", "framework_mappings": ["SOC2-CC5.2", "ISO27001-A.5.1"]}, {"artifact_id": "GV-001", "artifact_name": "Decision Record Log", "root": "01", "root_name": "Governance & Leadership", "level": "required", "criticality": "medium", "status": "PRESENT_STALE", "resolved_owner": "Founder / CEO", "matched_files": [{"id": "file-006", "name": "Architecture Decision Record Template (ADR).gdoc", "path": "/Engineering/Architecture Decision Record Template (ADR).gdoc", "modified_time": "2026-08-10T14:30:00Z", "owners": ["cto@acmecloud.io"]}], "review_cadence_days": 30, "days_stale": 41, "remediation_action": "File is 41 days past review cadence (30d). Founder / CEO must review and re-stamp.", "framework_mappings": ["SOC2-CC1.4"]}, {"artifact_id": "GV-002", "artifact_name": "Risk Register", "root": "01", "root_name": "Governance & Leadership", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "Founder / CEO", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Risk Register' into Google Drive; assign to Founder / CEO.", "framework_mappings": ["SOC2-CC3.1", "ISO27001-A.6.1"]}, {"artifact_id": "GV-003", "artifact_name": "Weekly Leadership Agenda", "root": "01", "root_name": "Governance & Leadership", "level": "required", "criticality": "medium", "status": "PRESENT_CURRENT", "resolved_owner": "Founder / CEO", "matched_files": [{"id": "file-005", "name": "Weekly Leadership Agenda & Sync Notes.gdoc", "path": "/Operations/Weekly Leadership Agenda & Sync Notes.gdoc", "modified_time": "2026-10-18T09:15:00Z", "owners": ["founder@acmecloud.io"]}], "review_cadence_days": 7, "days_stale": 0, "remediation_action": "Verified present and current. Maintain continuous monitoring.", "framework_mappings": ["SOC2-CC1.2"]}, {"artifact_id": "GV-004", "artifact_name": "Monthly Operating Review", "root": "01", "root_name": "Governance & Leadership", "level": "recommended", "criticality": "medium", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 30, "days_stale": 0, "remediation_action": "Compile canonical 'Monthly Operating Review' into Google Drive; assign to COO.", "framework_mappings": ["SOC2-CC2.1"]}, {"artifact_id": "GV-005", "artifact_name": "Annual Objectives", "root": "01", "root_name": "Governance & Leadership", "level": "recommended", "criticality": "medium", "status": "MISSING", "resolved_owner": "Founder / CEO", "matched_files": [], "review_cadence_days": 365, "days_stale": 0, "remediation_action": "Compile canonical 'Annual Objectives' into Google Drive; assign to Founder / CEO.", "framework_mappings": ["SOC2-CC1.1"]}, {"artifact_id": "FN-001", "artifact_name": "Vendor Register", "root": "02", "root_name": "Finance & Corporate", "level": "required", "criticality": "high", "status": "PRESENT_STALE", "resolved_owner": "Fractional CFO", "matched_files": [{"id": "file-009", "name": "Vendor Register & Software Subscriptions 2024.xlsx", "path": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx", "modified_time": "2024-05-15T16:00:00Z", "owners": ["founder@acmecloud.io"]}], "review_cadence_days": 90, "days_stale": 798, "remediation_action": "File is 798 days past review cadence (90d). Fractional CFO must review and re-stamp.", "framework_mappings": ["SOC2-CC9.2", "ISO27001-A.15"]}, {"artifact_id": "FN-002", "artifact_name": "Approval Matrix", "root": "02", "root_name": "Finance & Corporate", "level": "recommended", "criticality": "high", "status": "MISSING", "resolved_owner": "Fractional CFO", "matched_files": [], "review_cadence_days": 180, "days_stale": 0, "remediation_action": "Compile canonical 'Approval Matrix' into Google Drive; assign to Fractional CFO.", "framework_mappings": ["SOC2-CC2.2"]}, {"artifact_id": "FN-003", "artifact_name": "Investor Update Template", "root": "02", "root_name": "Finance & Corporate", "level": "recommended", "criticality": "medium", "status": "PRESENT_STALE", "resolved_owner": "Founder / CEO", "matched_files": [{"id": "file-010", "name": "Investor Update Template.gdoc", "path": "/Operations/Investor Update Template.gdoc", "modified_time": "2026-09-01T10:00:00Z", "owners": ["founder@acmecloud.io"]}], "review_cadence_days": 30, "days_stale": 19, "remediation_action": "File is 19 days past review cadence (30d). Founder / CEO must review and re-stamp.", "framework_mappings": ["Delaware-Corp-Reporting"]}, {"artifact_id": "FN-004", "artifact_name": "Data Room Index", "root": "02", "root_name": "Finance & Corporate", "level": "optional", "criticality": "high", "status": "MISSING", "resolved_owner": "Founder / CEO", "matched_files": [], "review_cadence_days": 30, "days_stale": 0, "remediation_action": "Compile canonical 'Data Room Index' into Google Drive; assign to Founder / CEO.", "framework_mappings": ["DueDiligence-Standard"]}, {"artifact_id": "FN-005", "artifact_name": "Procurement Checklist", "root": "02", "root_name": "Finance & Corporate", "level": "recommended", "criticality": "low", "status": "PRESENT_STALE", "resolved_owner": "Fractional CFO", "matched_files": [{"id": "file-015", "name": "Procurement Checklist.gdoc", "path": "/Operations/Procurement Checklist.gdoc", "modified_time": "2026-04-12T15:00:00Z", "owners": ["coo@acmecloud.io"]}], "review_cadence_days": 180, "days_stale": 11, "remediation_action": "File is 11 days past review cadence (180d). Fractional CFO must review and re-stamp.", "framework_mappings": ["SOC2-CC9.2"]}, {"artifact_id": "PE-001", "artifact_name": "Hiring Checklist", "root": "03", "root_name": "People", "level": "required", "criticality": "medium", "status": "PRESENT_CURRENT", "resolved_owner": "COO", "matched_files": [{"id": "file-002", "name": "Hiring Checklist v2.gdoc", "path": "/Team & Hiring/Hiring Checklist v2.gdoc", "modified_time": "2026-09-20T11:00:00Z", "owners": ["coo@acmecloud.io"]}], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Verified present and current. Maintain continuous monitoring.", "framework_mappings": ["SOC2-CC1.4"]}, {"artifact_id": "PE-002", "artifact_name": "Onboarding Checklist", "root": "03", "root_name": "People", "level": "required", "criticality": "high", "status": "PRESENT_CURRENT", "resolved_owner": "COO", "matched_files": [{"id": "file-003", "name": "Onboarding Checklist - Engineering & Ops.gsheet", "path": "/Team & Hiring/Onboarding Checklist - Engineering & Ops.gsheet", "modified_time": "2026-10-01T16:45:00Z", "owners": ["coo@acmecloud.io"]}], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Verified present and current. Maintain continuous monitoring.", "framework_mappings": ["SOC2-CC1.4", "ISO27001-A.7.1"]}, {"artifact_id": "PE-003", "artifact_name": "Offboarding Checklist", "root": "03", "root_name": "People", "level": "required", "criticality": "high", "status": "PRESENT_STALE", "resolved_owner": "COO", "matched_files": [{"id": "file-004", "name": "Employee Offboarding Checklist.gdoc", "path": "/Team & Hiring/Employee Offboarding Checklist.gdoc", "modified_time": "2025-03-01T10:00:00Z", "owners": ["coo@acmecloud.io"]}], "review_cadence_days": 90, "days_stale": 508, "remediation_action": "File is 508 days past review cadence (90d). COO must review and re-stamp.", "framework_mappings": ["SOC2-CC6.2", "ISO27001-A.7.3"]}, {"artifact_id": "PE-004", "artifact_name": "Role Charter Template", "root": "03", "root_name": "People", "level": "recommended", "criticality": "low", "status": "PRESENT_STALE", "resolved_owner": "COO", "matched_files": [{"id": "file-014", "name": "Role Charter Template.gdoc", "path": "/Team & Hiring/Role Charter Template.gdoc", "modified_time": "2026-01-15T14:00:00Z", "owners": ["coo@acmecloud.io"]}], "review_cadence_days": 180, "days_stale": 98, "remediation_action": "File is 98 days past review cadence (180d). COO must review and re-stamp.", "framework_mappings": ["SOC2-CC1.3"]}, {"artifact_id": "PE-005", "artifact_name": "Training Register", "root": "03", "root_name": "People", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 180, "days_stale": 0, "remediation_action": "Compile canonical 'Training Register' into Google Drive; assign to COO.", "framework_mappings": ["SOC2-CC2.2", "ISO27001-A.7.2"]}, {"artifact_id": "ES-001", "artifact_name": "Access Register", "root": "05", "root_name": "Engineering & Security", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "CTO", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Access Register' into Google Drive; assign to CTO.", "framework_mappings": ["SOC2-CC6.1", "ISO27001-A.9.2"]}, {"artifact_id": "ES-002", "artifact_name": "Incident Record Template", "root": "05", "root_name": "Engineering & Security", "level": "required", "criticality": "high", "status": "DUPLICATE_COLLISION", "resolved_owner": "CTO", "matched_files": [{"id": "file-007", "name": "Incident Record Template.gdoc", "path": "/Engineering/Incident Record Template.gdoc", "modified_time": "2026-09-02T13:00:00Z", "owners": ["cto@acmecloud.io"]}, {"id": "file-008", "name": "Incident Postmortem Template - copy (1).docx", "path": "/Old Backups & Shared/Incident Postmortem Template - copy (1).docx", "modified_time": "2025-11-10T12:00:00Z", "owners": ["former_contractor@acmecloud.io"]}], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Consolidate 2 conflicting copies into a single canonical version in the Master Register.", "framework_mappings": ["SOC2-CC7.3", "ISO27001-A.16.1"]}, {"artifact_id": "ES-003", "artifact_name": "Change Record Template", "root": "05", "root_name": "Engineering & Security", "level": "recommended", "criticality": "medium", "status": "PRESENT_CURRENT", "resolved_owner": "CTO", "matched_files": [{"id": "file-013", "name": "Standard Production Change Record.gdoc", "path": "/Engineering/Standard Production Change Record.gdoc", "modified_time": "2026-07-15T12:00:00Z", "owners": ["cto@acmecloud.io"]}], "review_cadence_days": 180, "days_stale": 0, "remediation_action": "Verified present and current. Maintain continuous monitoring.", "framework_mappings": ["SOC2-CC8.1", "ISO27001-A.12.1"]}, {"artifact_id": "ES-004", "artifact_name": "Architecture Decision Record Template", "root": "05", "root_name": "Engineering & Security", "level": "recommended", "criticality": "medium", "status": "PRESENT_CURRENT", "resolved_owner": "CTO", "matched_files": [{"id": "file-006", "name": "Architecture Decision Record Template (ADR).gdoc", "path": "/Engineering/Architecture Decision Record Template (ADR).gdoc", "modified_time": "2026-08-10T14:30:00Z", "owners": ["cto@acmecloud.io"]}], "review_cadence_days": 180, "days_stale": 0, "remediation_action": "Verified present and current. Maintain continuous monitoring.", "framework_mappings": ["SOC2-CC5.1"]}, {"artifact_id": "ES-005", "artifact_name": "Security Review Calendar", "root": "05", "root_name": "Engineering & Security", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "CTO", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Security Review Calendar' into Google Drive; assign to CTO.", "framework_mappings": ["SOC2-CC4.1", "ISO27001-A.18.2"]}, {"artifact_id": "SC-001", "artifact_name": "Customer Security Request Tracker", "root": "06", "root_name": "Sales & Customers", "level": "required", "criticality": "high", "status": "PRESENT_CURRENT", "resolved_owner": "CTO", "matched_files": [{"id": "file-012", "name": "Customer Security FAQ & CAIQ Answers.gsheet", "path": "/Sales/Customer Security FAQ & CAIQ Answers.gsheet", "modified_time": "2026-10-15T18:00:00Z", "owners": ["headofsales@acmecloud.io"]}], "review_cadence_days": 30, "days_stale": 0, "remediation_action": "Verified present and current. Maintain continuous monitoring.", "framework_mappings": ["EnterpriseProcurement-Standard"]}, {"artifact_id": "SC-002", "artifact_name": "Contract Obligations Register", "root": "06", "root_name": "Sales & Customers", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "External Counsel", "matched_files": [], "review_cadence_days": 90, "days_stale": 0, "remediation_action": "Compile canonical 'Contract Obligations Register' into Google Drive; assign to External Counsel.", "framework_mappings": ["SOC2-CC9.1"]}, {"artifact_id": "SC-003", "artifact_name": "Evidence Index", "root": "06", "root_name": "Sales & Customers", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "CTO", "matched_files": [], "review_cadence_days": 30, "days_stale": 0, "remediation_action": "Compile canonical 'Evidence Index' into Google Drive; assign to CTO.", "framework_mappings": ["SOC2-CC4.2", "ISO27001-A.18.1"]}, {"artifact_id": "OP-001", "artifact_name": "SOP Template", "root": "08", "root_name": "Operations", "level": "recommended", "criticality": "medium", "status": "PRESENT_CURRENT", "resolved_owner": "COO", "matched_files": [{"id": "file-011", "name": "SOP - Customer Onboarding Procedure.gdoc", "path": "/Operations/SOP - Customer Onboarding Procedure.gdoc", "modified_time": "2026-06-20T17:00:00Z", "owners": ["coo@acmecloud.io"]}], "review_cadence_days": 180, "days_stale": 0, "remediation_action": "Verified present and current. Maintain continuous monitoring.", "framework_mappings": ["ISO9001-4.4"]}, {"artifact_id": "OP-002", "artifact_name": "Business Continuity Plan (draft template)", "root": "08", "root_name": "Operations", "level": "recommended", "criticality": "high", "status": "MISSING", "resolved_owner": "COO", "matched_files": [], "review_cadence_days": 180, "days_stale": 0, "remediation_action": "Compile canonical 'Business Continuity Plan (draft template)' into Google Drive; assign to COO.", "framework_mappings": ["SOC2-A1.2", "ISO27001-A.17.1"]}, {"artifact_id": "LG-001", "artifact_name": "Policy Gap Report", "root": "09", "root_name": "Legal / Privacy / Compliance", "level": "required", "criticality": "high", "status": "MISSING", "resolved_owner": "Founder / CEO", "matched_files": [], "review_cadence_days": 7, "days_stale": 0, "remediation_action": "Compile canonical 'Policy Gap Report' into Google Drive; assign to Founder / CEO.", "framework_mappings": ["SOC2-CC4.1", "GovernanceReadiness"]}]};
-    const GUARDIAN_DATA = {"company_name": "Acme Cloud Technologies, Inc.", "generated_at": "2026-10-20 18:00 UTC", "health_score": 34.0, "total_drift_events": 22, "high_severity_count": 4, "medium_severity_count": 12, "low_severity_count": 6, "events": [{"event_id": "DRIFT-001", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Hiring Checklist v2.gdoc'", "description": "File 'Hiring Checklist v2.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Team & Hiring/Hiring Checklist v2.gdoc", "affected_artifact_id": null, "assigned_owner": "coo@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-002", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Onboarding Checklist - Engineering & Ops.gsheet'", "description": "File 'Onboarding Checklist - Engineering & Ops.gsheet' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Team & Hiring/Onboarding Checklist - Engineering & Ops.gsheet", "affected_artifact_id": null, "assigned_owner": "coo@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-003", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Employee Offboarding Checklist.gdoc'", "description": "File 'Employee Offboarding Checklist.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Team & Hiring/Employee Offboarding Checklist.gdoc", "affected_artifact_id": null, "assigned_owner": "coo@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-004", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Weekly Leadership Agenda & Sync Notes.gdoc'", "description": "File 'Weekly Leadership Agenda & Sync Notes.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Operations/Weekly Leadership Agenda & Sync Notes.gdoc", "affected_artifact_id": null, "assigned_owner": "founder@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-005", "severity": "LOW", "category": "MISPLACED_FILE", "title": "Misplaced File in '/Engineering/Architecture Decision Record Template (ADR).gdoc'", "description": "Document 'Architecture Decision Record Template (ADR).gdoc' is stored in an unmanaged folder outside the canonical taxonomy hierarchy.", "affected_file": "/Engineering/Architecture Decision Record Template (ADR).gdoc", "affected_artifact_id": null, "assigned_owner": "cto@acmecloud.io", "remediation_proposal": "Move file into its designated numbered taxonomy folder."}, {"event_id": "DRIFT-006", "severity": "LOW", "category": "MISPLACED_FILE", "title": "Misplaced File in '/Engineering/Incident Record Template.gdoc'", "description": "Document 'Incident Record Template.gdoc' is stored in an unmanaged folder outside the canonical taxonomy hierarchy.", "affected_file": "/Engineering/Incident Record Template.gdoc", "affected_artifact_id": null, "assigned_owner": "cto@acmecloud.io", "remediation_proposal": "Move file into its designated numbered taxonomy folder."}, {"event_id": "DRIFT-007", "severity": "HIGH", "category": "UNOWNED_FILE", "title": "Unowned or Orphaned Document: 'Incident Postmortem Template - copy (1).docx'", "description": "File 'Incident Postmortem Template - copy (1).docx' is owned by 'former_contractor@acmecloud.io' which lacks an active corporate owner.", "affected_file": "/Old Backups & Shared/Incident Postmortem Template - copy (1).docx", "affected_artifact_id": null, "assigned_owner": "COO / Founder", "remediation_proposal": "Reassign document ownership to active functional lead."}, {"event_id": "DRIFT-008", "severity": "LOW", "category": "MISPLACED_FILE", "title": "Misplaced File in '/Old Backups & Shared/Incident Postmortem Template - copy (1).docx'", "description": "Document 'Incident Postmortem Template - copy (1).docx' is stored in an unmanaged folder outside the canonical taxonomy hierarchy.", "affected_file": "/Old Backups & Shared/Incident Postmortem Template - copy (1).docx", "affected_artifact_id": null, "assigned_owner": "former_contractor@acmecloud.io", "remediation_proposal": "Move file into its designated numbered taxonomy folder."}, {"event_id": "DRIFT-009", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Vendor Register & Software Subscriptions 2024.xlsx'", "description": "File 'Vendor Register & Software Subscriptions 2024.xlsx' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx", "affected_artifact_id": null, "assigned_owner": "founder@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-010", "severity": "LOW", "category": "MISPLACED_FILE", "title": "Misplaced File in '/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx'", "description": "Document 'Vendor Register & Software Subscriptions 2024.xlsx' is stored in an unmanaged folder outside the canonical taxonomy hierarchy.", "affected_file": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx", "affected_artifact_id": null, "assigned_owner": "founder@acmecloud.io", "remediation_proposal": "Move file into its designated numbered taxonomy folder."}, {"event_id": "DRIFT-011", "severity": "LOW", "category": "MISPLACED_FILE", "title": "Misplaced File in '/Operations/Investor Update Template.gdoc'", "description": "Document 'Investor Update Template.gdoc' is stored in an unmanaged folder outside the canonical taxonomy hierarchy.", "affected_file": "/Operations/Investor Update Template.gdoc", "affected_artifact_id": null, "assigned_owner": "founder@acmecloud.io", "remediation_proposal": "Move file into its designated numbered taxonomy folder."}, {"event_id": "DRIFT-012", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'SOP - Customer Onboarding Procedure.gdoc'", "description": "File 'SOP - Customer Onboarding Procedure.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Operations/SOP - Customer Onboarding Procedure.gdoc", "affected_artifact_id": null, "assigned_owner": "coo@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-013", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Standard Production Change Record.gdoc'", "description": "File 'Standard Production Change Record.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Engineering/Standard Production Change Record.gdoc", "affected_artifact_id": null, "assigned_owner": "cto@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-014", "severity": "LOW", "category": "MISPLACED_FILE", "title": "Misplaced File in '/Team & Hiring/Role Charter Template.gdoc'", "description": "Document 'Role Charter Template.gdoc' is stored in an unmanaged folder outside the canonical taxonomy hierarchy.", "affected_file": "/Team & Hiring/Role Charter Template.gdoc", "affected_artifact_id": null, "assigned_owner": "coo@acmecloud.io", "remediation_proposal": "Move file into its designated numbered taxonomy folder."}, {"event_id": "DRIFT-015", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Procurement Checklist.gdoc'", "description": "File 'Procurement Checklist.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Operations/Procurement Checklist.gdoc", "affected_artifact_id": null, "assigned_owner": "coo@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-016", "severity": "MEDIUM", "category": "STALE_REVIEW", "title": "Overdue Review: `GV-001` Decision Record Log", "description": "Document review is 41 days overdue (cadence: 30d; last modified 71d ago).", "affected_file": "/Engineering/Architecture Decision Record Template (ADR).gdoc", "affected_artifact_id": "GV-001", "assigned_owner": "Founder / CEO", "remediation_proposal": "Accountable owner (Founder / CEO) must complete review and update review date."}, {"event_id": "DRIFT-017", "severity": "HIGH", "category": "STALE_REVIEW", "title": "Overdue Review: `FN-001` Vendor Register", "description": "Document review is 798 days overdue (cadence: 90d; last modified 888d ago).", "affected_file": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx", "affected_artifact_id": "FN-001", "assigned_owner": "Fractional CFO", "remediation_proposal": "Accountable owner (Fractional CFO) must complete review and update review date."}, {"event_id": "DRIFT-018", "severity": "MEDIUM", "category": "STALE_REVIEW", "title": "Overdue Review: `FN-003` Investor Update Template", "description": "Document review is 19 days overdue (cadence: 30d; last modified 49d ago).", "affected_file": "/Operations/Investor Update Template.gdoc", "affected_artifact_id": "FN-003", "assigned_owner": "Founder / CEO", "remediation_proposal": "Accountable owner (Founder / CEO) must complete review and update review date."}, {"event_id": "DRIFT-019", "severity": "MEDIUM", "category": "STALE_REVIEW", "title": "Overdue Review: `FN-005` Procurement Checklist", "description": "Document review is 11 days overdue (cadence: 180d; last modified 191d ago).", "affected_file": "/Operations/Procurement Checklist.gdoc", "affected_artifact_id": "FN-005", "assigned_owner": "Fractional CFO", "remediation_proposal": "Accountable owner (Fractional CFO) must complete review and update review date."}, {"event_id": "DRIFT-020", "severity": "HIGH", "category": "STALE_REVIEW", "title": "Overdue Review: `PE-003` Offboarding Checklist", "description": "Document review is 508 days overdue (cadence: 90d; last modified 598d ago).", "affected_file": "/Team & Hiring/Employee Offboarding Checklist.gdoc", "affected_artifact_id": "PE-003", "assigned_owner": "COO", "remediation_proposal": "Accountable owner (COO) must complete review and update review date."}, {"event_id": "DRIFT-021", "severity": "MEDIUM", "category": "STALE_REVIEW", "title": "Overdue Review: `PE-004` Role Charter Template", "description": "Document review is 98 days overdue (cadence: 180d; last modified 278d ago).", "affected_file": "/Team & Hiring/Role Charter Template.gdoc", "affected_artifact_id": "PE-004", "assigned_owner": "COO", "remediation_proposal": "Accountable owner (COO) must complete review and update review date."}, {"event_id": "DRIFT-022", "severity": "HIGH", "category": "DUPLICATE_COLLISION", "title": "Version Collision for `ES-002` (Incident Record Template)", "description": "Detected 2 competing copies for Incident Record Template in Drive (Incident Record Template.gdoc, Incident Postmortem Template - copy (1).docx).", "affected_file": "/Engineering/Incident Record Template.gdoc", "affected_artifact_id": "ES-002", "assigned_owner": "CTO", "remediation_proposal": "Archive superseded draft and designate the canonical master file."}], "action_queue": [{"id": "DRIFT-001", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "coo@acmecloud.io", "target": "/Team & Hiring/Hiring Checklist v2.gdoc"}, {"id": "DRIFT-002", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "coo@acmecloud.io", "target": "/Team & Hiring/Onboarding Checklist - Engineering & Ops.gsheet"}, {"id": "DRIFT-003", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "coo@acmecloud.io", "target": "/Team & Hiring/Employee Offboarding Checklist.gdoc"}, {"id": "DRIFT-004", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "founder@acmecloud.io", "target": "/Operations/Weekly Leadership Agenda & Sync Notes.gdoc"}, {"id": "DRIFT-005", "priority": "LOW", "task": "Move file into its designated numbered taxonomy folder.", "owner": "cto@acmecloud.io", "target": "/Engineering/Architecture Decision Record Template (ADR).gdoc"}, {"id": "DRIFT-006", "priority": "LOW", "task": "Move file into its designated numbered taxonomy folder.", "owner": "cto@acmecloud.io", "target": "/Engineering/Incident Record Template.gdoc"}, {"id": "DRIFT-007", "priority": "HIGH", "task": "Reassign document ownership to active functional lead.", "owner": "COO / Founder", "target": "/Old Backups & Shared/Incident Postmortem Template - copy (1).docx"}, {"id": "DRIFT-008", "priority": "LOW", "task": "Move file into its designated numbered taxonomy folder.", "owner": "former_contractor@acmecloud.io", "target": "/Old Backups & Shared/Incident Postmortem Template - copy (1).docx"}, {"id": "DRIFT-009", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "founder@acmecloud.io", "target": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx"}, {"id": "DRIFT-010", "priority": "LOW", "task": "Move file into its designated numbered taxonomy folder.", "owner": "founder@acmecloud.io", "target": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx"}, {"id": "DRIFT-011", "priority": "LOW", "task": "Move file into its designated numbered taxonomy folder.", "owner": "founder@acmecloud.io", "target": "/Operations/Investor Update Template.gdoc"}, {"id": "DRIFT-012", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "coo@acmecloud.io", "target": "/Operations/SOP - Customer Onboarding Procedure.gdoc"}, {"id": "DRIFT-013", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "cto@acmecloud.io", "target": "/Engineering/Standard Production Change Record.gdoc"}, {"id": "DRIFT-014", "priority": "LOW", "task": "Move file into its designated numbered taxonomy folder.", "owner": "coo@acmecloud.io", "target": "/Team & Hiring/Role Charter Template.gdoc"}, {"id": "DRIFT-015", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "coo@acmecloud.io", "target": "/Operations/Procurement Checklist.gdoc"}, {"id": "DRIFT-016", "priority": "MEDIUM", "task": "Accountable owner (Founder / CEO) must complete review and update review date.", "owner": "Founder / CEO", "target": "/Engineering/Architecture Decision Record Template (ADR).gdoc"}, {"id": "DRIFT-017", "priority": "HIGH", "task": "Accountable owner (Fractional CFO) must complete review and update review date.", "owner": "Fractional CFO", "target": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx"}, {"id": "DRIFT-018", "priority": "MEDIUM", "task": "Accountable owner (Founder / CEO) must complete review and update review date.", "owner": "Founder / CEO", "target": "/Operations/Investor Update Template.gdoc"}, {"id": "DRIFT-019", "priority": "MEDIUM", "task": "Accountable owner (Fractional CFO) must complete review and update review date.", "owner": "Fractional CFO", "target": "/Operations/Procurement Checklist.gdoc"}, {"id": "DRIFT-020", "priority": "HIGH", "task": "Accountable owner (COO) must complete review and update review date.", "owner": "COO", "target": "/Team & Hiring/Employee Offboarding Checklist.gdoc"}, {"id": "DRIFT-021", "priority": "MEDIUM", "task": "Accountable owner (COO) must complete review and update review date.", "owner": "COO", "target": "/Team & Hiring/Role Charter Template.gdoc"}, {"id": "DRIFT-022", "priority": "HIGH", "task": "Archive superseded draft and designate the canonical master file.", "owner": "CTO", "target": "/Engineering/Incident Record Template.gdoc"}]};
+    const GUARDIAN_DATA = {"company_name": "Acme Cloud Technologies, Inc.", "generated_at": "2026-10-20 18:00 UTC", "health_score": 38.0, "total_drift_events": 18, "high_severity_count": 4, "medium_severity_count": 12, "low_severity_count": 2, "events": [{"event_id": "DRIFT-001", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Hiring Checklist v2.gdoc'", "description": "File 'Hiring Checklist v2.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Team & Hiring/Hiring Checklist v2.gdoc", "affected_artifact_id": null, "assigned_owner": "coo@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-002", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Onboarding Checklist - Engineering & Ops.gsheet'", "description": "File 'Onboarding Checklist - Engineering & Ops.gsheet' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Team & Hiring/Onboarding Checklist - Engineering & Ops.gsheet", "affected_artifact_id": null, "assigned_owner": "coo@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-003", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Employee Offboarding Checklist.gdoc'", "description": "File 'Employee Offboarding Checklist.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Team & Hiring/Employee Offboarding Checklist.gdoc", "affected_artifact_id": null, "assigned_owner": "coo@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-004", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Weekly Leadership Agenda & Sync Notes.gdoc'", "description": "File 'Weekly Leadership Agenda & Sync Notes.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Operations/Weekly Leadership Agenda & Sync Notes.gdoc", "affected_artifact_id": null, "assigned_owner": "founder@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-005", "severity": "HIGH", "category": "UNOWNED_FILE", "title": "Unowned or Orphaned Document: 'Incident Postmortem Template - copy (1).docx'", "description": "File 'Incident Postmortem Template - copy (1).docx' is owned by 'former_contractor@acmecloud.io' which lacks an active corporate owner.", "affected_file": "/Old Backups & Shared/Incident Postmortem Template - copy (1).docx", "affected_artifact_id": null, "assigned_owner": "COO / Founder", "remediation_proposal": "Reassign document ownership to active functional lead."}, {"event_id": "DRIFT-006", "severity": "LOW", "category": "MISPLACED_FILE", "title": "Misplaced File in '/Old Backups & Shared/Incident Postmortem Template - copy (1).docx'", "description": "Document 'Incident Postmortem Template - copy (1).docx' is stored in an unmanaged folder outside the canonical taxonomy hierarchy.", "affected_file": "/Old Backups & Shared/Incident Postmortem Template - copy (1).docx", "affected_artifact_id": null, "assigned_owner": "former_contractor@acmecloud.io", "remediation_proposal": "Move file into its designated numbered taxonomy folder."}, {"event_id": "DRIFT-007", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Vendor Register & Software Subscriptions 2024.xlsx'", "description": "File 'Vendor Register & Software Subscriptions 2024.xlsx' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx", "affected_artifact_id": null, "assigned_owner": "founder@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-008", "severity": "LOW", "category": "MISPLACED_FILE", "title": "Misplaced File in '/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx'", "description": "Document 'Vendor Register & Software Subscriptions 2024.xlsx' is stored in an unmanaged folder outside the canonical taxonomy hierarchy.", "affected_file": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx", "affected_artifact_id": null, "assigned_owner": "founder@acmecloud.io", "remediation_proposal": "Move file into its designated numbered taxonomy folder."}, {"event_id": "DRIFT-009", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'SOP - Customer Onboarding Procedure.gdoc'", "description": "File 'SOP - Customer Onboarding Procedure.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Operations/SOP - Customer Onboarding Procedure.gdoc", "affected_artifact_id": null, "assigned_owner": "coo@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-010", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Standard Production Change Record.gdoc'", "description": "File 'Standard Production Change Record.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Engineering/Standard Production Change Record.gdoc", "affected_artifact_id": null, "assigned_owner": "cto@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-011", "severity": "MEDIUM", "category": "UNINDEXED_FILE", "title": "Unindexed Governed File: 'Procurement Checklist.gdoc'", "description": "File 'Procurement Checklist.gdoc' appears to be a governed document but lacks a canonical ID and entry in the Master Document Register.", "affected_file": "/Operations/Procurement Checklist.gdoc", "affected_artifact_id": null, "assigned_owner": "coo@acmecloud.io", "remediation_proposal": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder."}, {"event_id": "DRIFT-012", "severity": "MEDIUM", "category": "STALE_REVIEW", "title": "Overdue Review: `GV-001` Decision Record Log", "description": "Document review is 41 days overdue (cadence: 30d; last modified 71d ago).", "affected_file": "/Engineering/Architecture Decision Record Template (ADR).gdoc", "affected_artifact_id": "GV-001", "assigned_owner": "Founder / CEO", "remediation_proposal": "Accountable owner (Founder / CEO) must complete review and update review date."}, {"event_id": "DRIFT-013", "severity": "HIGH", "category": "STALE_REVIEW", "title": "Overdue Review: `FN-001` Vendor Register", "description": "Document review is 798 days overdue (cadence: 90d; last modified 888d ago).", "affected_file": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx", "affected_artifact_id": "FN-001", "assigned_owner": "Fractional CFO", "remediation_proposal": "Accountable owner (Fractional CFO) must complete review and update review date."}, {"event_id": "DRIFT-014", "severity": "MEDIUM", "category": "STALE_REVIEW", "title": "Overdue Review: `FN-003` Investor Update Template", "description": "Document review is 19 days overdue (cadence: 30d; last modified 49d ago).", "affected_file": "/Operations/Investor Update Template.gdoc", "affected_artifact_id": "FN-003", "assigned_owner": "Founder / CEO", "remediation_proposal": "Accountable owner (Founder / CEO) must complete review and update review date."}, {"event_id": "DRIFT-015", "severity": "MEDIUM", "category": "STALE_REVIEW", "title": "Overdue Review: `FN-005` Procurement Checklist", "description": "Document review is 11 days overdue (cadence: 180d; last modified 191d ago).", "affected_file": "/Operations/Procurement Checklist.gdoc", "affected_artifact_id": "FN-005", "assigned_owner": "Fractional CFO", "remediation_proposal": "Accountable owner (Fractional CFO) must complete review and update review date."}, {"event_id": "DRIFT-016", "severity": "HIGH", "category": "STALE_REVIEW", "title": "Overdue Review: `PE-003` Offboarding Checklist", "description": "Document review is 508 days overdue (cadence: 90d; last modified 598d ago).", "affected_file": "/Team & Hiring/Employee Offboarding Checklist.gdoc", "affected_artifact_id": "PE-003", "assigned_owner": "COO", "remediation_proposal": "Accountable owner (COO) must complete review and update review date."}, {"event_id": "DRIFT-017", "severity": "MEDIUM", "category": "STALE_REVIEW", "title": "Overdue Review: `PE-004` Role Charter Template", "description": "Document review is 98 days overdue (cadence: 180d; last modified 278d ago).", "affected_file": "/Team & Hiring/Role Charter Template.gdoc", "affected_artifact_id": "PE-004", "assigned_owner": "COO", "remediation_proposal": "Accountable owner (COO) must complete review and update review date."}, {"event_id": "DRIFT-018", "severity": "HIGH", "category": "DUPLICATE_COLLISION", "title": "Version Collision for `ES-002` (Incident Record Template)", "description": "Detected 2 competing copies for Incident Record Template in Drive (Incident Record Template.gdoc, Incident Postmortem Template - copy (1).docx).", "affected_file": "/Engineering/Incident Record Template.gdoc", "affected_artifact_id": "ES-002", "assigned_owner": "CTO", "remediation_proposal": "Archive superseded draft and designate the canonical master file."}], "action_queue": [{"id": "DRIFT-001", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "coo@acmecloud.io", "target": "/Team & Hiring/Hiring Checklist v2.gdoc"}, {"id": "DRIFT-002", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "coo@acmecloud.io", "target": "/Team & Hiring/Onboarding Checklist - Engineering & Ops.gsheet"}, {"id": "DRIFT-003", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "coo@acmecloud.io", "target": "/Team & Hiring/Employee Offboarding Checklist.gdoc"}, {"id": "DRIFT-004", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "founder@acmecloud.io", "target": "/Operations/Weekly Leadership Agenda & Sync Notes.gdoc"}, {"id": "DRIFT-005", "priority": "HIGH", "task": "Reassign document ownership to active functional lead.", "owner": "COO / Founder", "target": "/Old Backups & Shared/Incident Postmortem Template - copy (1).docx"}, {"id": "DRIFT-006", "priority": "LOW", "task": "Move file into its designated numbered taxonomy folder.", "owner": "former_contractor@acmecloud.io", "target": "/Old Backups & Shared/Incident Postmortem Template - copy (1).docx"}, {"id": "DRIFT-007", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "founder@acmecloud.io", "target": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx"}, {"id": "DRIFT-008", "priority": "LOW", "task": "Move file into its designated numbered taxonomy folder.", "owner": "founder@acmecloud.io", "target": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx"}, {"id": "DRIFT-009", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "coo@acmecloud.io", "target": "/Operations/SOP - Customer Onboarding Procedure.gdoc"}, {"id": "DRIFT-010", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "cto@acmecloud.io", "target": "/Engineering/Standard Production Change Record.gdoc"}, {"id": "DRIFT-011", "priority": "MEDIUM", "task": "Assign canonical ID, register in Master Document Register, and move into appropriate root folder.", "owner": "coo@acmecloud.io", "target": "/Operations/Procurement Checklist.gdoc"}, {"id": "DRIFT-012", "priority": "MEDIUM", "task": "Accountable owner (Founder / CEO) must complete review and update review date.", "owner": "Founder / CEO", "target": "/Engineering/Architecture Decision Record Template (ADR).gdoc"}, {"id": "DRIFT-013", "priority": "HIGH", "task": "Accountable owner (Fractional CFO) must complete review and update review date.", "owner": "Fractional CFO", "target": "/Old Backups & Shared/Vendor Register & Software Subscriptions 2024.xlsx"}, {"id": "DRIFT-014", "priority": "MEDIUM", "task": "Accountable owner (Founder / CEO) must complete review and update review date.", "owner": "Founder / CEO", "target": "/Operations/Investor Update Template.gdoc"}, {"id": "DRIFT-015", "priority": "MEDIUM", "task": "Accountable owner (Fractional CFO) must complete review and update review date.", "owner": "Fractional CFO", "target": "/Operations/Procurement Checklist.gdoc"}, {"id": "DRIFT-016", "priority": "HIGH", "task": "Accountable owner (COO) must complete review and update review date.", "owner": "COO", "target": "/Team & Hiring/Employee Offboarding Checklist.gdoc"}, {"id": "DRIFT-017", "priority": "MEDIUM", "task": "Accountable owner (COO) must complete review and update review date.", "owner": "COO", "target": "/Team & Hiring/Role Charter Template.gdoc"}, {"id": "DRIFT-018", "priority": "HIGH", "task": "Archive superseded draft and designate the canonical master file.", "owner": "CTO", "target": "/Engineering/Incident Record Template.gdoc"}]};
 
     let activeFilter = 'ALL';
     let searchQuery = '';
 
-    // Render Domains
+    function sevClass(sev) {
+      return sev === 'HIGH' ? 'sev-high' : (sev === 'MEDIUM' ? 'sev-medium' : 'sev-low');
+    }
+    function sevTag(sev) {
+      return sev === 'HIGH' ? '<span class="tag reject">[HIGH]</span>'
+           : (sev === 'MEDIUM' ? '<span class="tag drift">[MEDIUM]</span>' : '<span class="tag">[LOW]</span>');
+    }
+    function critColor(c) {
+      return c === 'high' ? 'var(--reject-text)' : (c === 'medium' ? 'var(--drift-text)' : 'var(--ink-muted)');
+    }
+    function scoreColor(p) {
+      return p < 40 ? 'var(--reject)' : (p < 75 ? 'var(--drift)' : 'var(--pass)');
+    }
+
     function renderDomains() {
       const container = document.getElementById('domainContainer');
       container.innerHTML = GAP_DATA.domain_scores.map(d => {
-        const color = d.percentage < 40 ? 'var(--danger)' : (d.percentage < 75 ? 'var(--warning)' : 'var(--success)');
-        const blockerText = d.missing_critical > 0 ? `<span style="color: var(--danger); font-weight: 700;">🔴 ${d.missing_critical} Blocker(s)</span>` : '<span style="color: var(--success);">🟢 Clear</span>';
+        const color = scoreColor(d.percentage);
+        const blockerText = d.missing_critical > 0
+          ? `<span style="color: var(--reject-text); font-weight: 800;">[${d.missing_critical} BLOCKER(S)]</span>`
+          : '<span style="color: var(--pass-text);">[CLEAR]</span>';
         return `
           <div class="domain-card">
             <div class="domain-header">
@@ -591,7 +469,7 @@
               <div class="prog-fill" style="width: ${d.percentage}%; background: ${color};"></div>
             </div>
             <div class="domain-meta">
-              <span>${d.earned_points} / ${d.total_points} pts</span>
+              <span>${d.earned_points} / ${d.total_points} PTS</span>
               <span>${blockerText}</span>
             </div>
           </div>
@@ -599,30 +477,26 @@
       }).join('');
     }
 
-    // Render Blockers
     function renderBlockers() {
       const container = document.getElementById('blockersContainer');
       container.innerHTML = GAP_DATA.immediate_blockers.map(b => {
-        const fw = b.framework_mappings.length > 0 ? b.framework_mappings.join(', ') : 'Governance';
+        const fw = b.framework_mappings.length > 0 ? b.framework_mappings.join(', ') : 'GOVERNANCE';
         return `
           <div class="blocker-item">
             <div class="blocker-title">
-              <span><strong>${b.artifact_id}</strong> — ${b.artifact_name}</span>
+              <span><span class="blocker-id">${b.artifact_id}</span> ${b.artifact_name}</span>
               <span class="badge-chip">${fw}</span>
             </div>
-            <div class="blocker-reason">
-              ${b.remediation_action}
-            </div>
-            <div style="margin-top: 8px; font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between;">
-              <span>Domain: ${b.root} ${b.root_name}</span>
-              <span>Owner: <strong>${b.resolved_owner}</strong></span>
+            <div class="blocker-reason">${b.remediation_action}</div>
+            <div class="feed-meta" style="margin-top: 8px; display: flex; justify-content: space-between;">
+              <span>DOMAIN ${b.root} ${b.root_name}</span>
+              <span>OWNER <strong>${b.resolved_owner}</strong></span>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    // Render Matrix Table
     function renderMatrix() {
       const tbody = document.getElementById('matrixTableBody');
       const filtered = GAP_DATA.items.filter(item => {
@@ -638,57 +512,50 @@
       });
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">No artifacts match the current filter.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--ink-muted); padding: 20px;">[NO GAPS] — no artifacts match the current filter.</td></tr>`;
         return;
       }
 
       tbody.innerHTML = filtered.map(item => {
-        let statusTag = '';
-        if (item.status === 'PRESENT_CURRENT') statusTag = '<span class="status-tag tag-current">🟢 Current</span>';
-        else if (item.status === 'PRESENT_STALE') statusTag = `<span class="status-tag tag-stale">🟡 Stale (${item.days_stale}d)</span>`;
-        else if (item.status === 'DUPLICATE_COLLISION') statusTag = '<span class="status-tag tag-conflict">⚠️ Duplicate</span>';
-        else if (item.status === 'MISPLACED') statusTag = '<span class="status-tag tag-misplaced">📦 Misplaced</span>';
-        else statusTag = '<span class="status-tag tag-missing">🔴 Missing</span>';
+        let statusTag = '', flagged = '';
+        if (item.status === 'PRESENT_CURRENT') statusTag = '<span class="tag pass">[CURRENT]</span>';
+        else if (item.status === 'PRESENT_STALE') { statusTag = `<span class="tag drift">[STALE ${item.days_stale}D]</span>`; flagged = 'flagged'; }
+        else if (item.status === 'DUPLICATE_COLLISION') { statusTag = '<span class="tag spec">[DUP]</span>'; flagged = 'flagged'; }
+        else if (item.status === 'MISPLACED') { statusTag = '<span class="tag drift">[MISPLACED]</span>'; flagged = 'flagged'; }
+        else { statusTag = '<span class="tag reject">[MISSING]</span>'; flagged = 'flagged'; }
 
-        const critColor = item.criticality === 'high' ? 'var(--danger)' : (item.criticality === 'medium' ? 'var(--warning)' : 'var(--text-muted)');
         const fwStr = item.framework_mappings.length > 0 ? item.framework_mappings.join(', ') : '—';
 
         return `
-          <tr>
-            <td style="font-family: var(--font-mono); font-weight: 700;">${item.artifact_id}</td>
-            <td><strong>${item.artifact_name}</strong></td>
+          <tr class="${flagged}">
+            <td class="aid">${item.artifact_id}</td>
+            <td class="artifact-name"><strong>${item.artifact_name}</strong></td>
             <td>${item.root} ${item.root_name}</td>
-            <td style="color: ${critColor}; font-weight: 600;">${item.criticality.toUpperCase()}</td>
+            <td style="color: ${critColor(item.criticality)}; font-family: var(--font-mono); font-size: 11px;">${item.criticality.toUpperCase()}</td>
             <td>${statusTag}</td>
             <td>${item.resolved_owner}</td>
-            <td>${item.review_cadence_days}d</td>
+            <td style="font-family: var(--font-mono);">${item.review_cadence_days}D</td>
             <td><span class="badge-chip">${fwStr}</span></td>
-            <td style="font-size: 11px; color: var(--text-muted);">${item.remediation_action}</td>
+            <td style="font-size: 11px; color: var(--ink-muted);">${item.remediation_action}</td>
           </tr>
         `;
       }).join('');
     }
 
-    // Render Guardian Feed
     function renderGuardian() {
       const container = document.getElementById('guardianFeedContainer');
       container.innerHTML = GUARDIAN_DATA.events.slice(0, 6).map(e => {
-        const color = e.severity === 'HIGH' ? 'var(--danger)' : (e.severity === 'MEDIUM' ? 'var(--warning)' : 'var(--text-muted)');
         return `
-          <div class="feed-item">
-            <div class="feed-info">
-              <div class="feed-title">
-                <span style="color: ${color}; font-weight: 700;">[${e.severity}]</span>
-                ${e.title}
-              </div>
+          <div class="feed-item ${sevClass(e.severity)}">
+            <div>
+              <div class="feed-title">${sevTag(e.severity)} ${e.title}</div>
               <div class="feed-desc">${e.description}</div>
-              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                Assigned to: <strong>${e.assigned_owner}</strong> • Action: ${e.remediation_proposal}
-              </div>
+              <div class="feed-meta">OWNER <strong>${e.assigned_owner}</strong> / ACTION ${e.remediation_proposal}</div>
             </div>
-            <button class="btn" onclick="alert('Simulated 1-click fix: ${e.remediation_proposal}')">
-              ⚡ Fix
-            </button>
+            <div>
+              <button class="btn" onclick="this.nextElementSibling.hidden=!this.nextElementSibling.hidden">[PROPOSE]</button>
+              <div class="feed-hint" hidden>[SIMULATION] — approval required before any apply</div>
+            </div>
           </div>
         `;
       }).join('');
@@ -706,7 +573,6 @@
       renderMatrix();
     });
 
-    // Init
     renderDomains();
     renderBlockers();
     renderMatrix();

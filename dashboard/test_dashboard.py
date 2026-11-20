@@ -46,14 +46,18 @@ class TestDashboardGenerator(unittest.TestCase):
 
         # Verify key UI components in rendered HTML
         self.assertIn("Acme Cloud Technologies, Inc.", html)
-        self.assertIn("OpsGraph Beta", html)
-        self.assertIn("svg-dial", html)
-        self.assertIn("29.9%", html)  # Score dial
-        self.assertIn("Immediate Deal & Due Diligence Blockers", html)
-        self.assertIn("Operating Graph Gap Matrix", html)
-        self.assertIn("Active Company Guardian Feed", html)
+        self.assertIn("OpsGraph", html)
+        self.assertIn("numeral", html)  # readiness numeral (no donut chart — banned)
+        self.assertIn("29.9", html)  # readiness score
+        self.assertIn("[CRITICAL DRIFT]", html)  # <40 -> critical state tag
+        self.assertIn("Immediate blockers", html)
+        self.assertIn("Gap matrix", html)
+        self.assertIn("Guardian drift feed", html)
         self.assertIn("GAP_DATA", html)
         self.assertIn("GUARDIAN_DATA", html)
+        # brand tokens shipped
+        self.assertIn("--paper: #F7F5F0", html)
+        self.assertIn("--spec: #1F3FA0", html)
 
 
 if __name__ == "__main__":

@@ -81,12 +81,15 @@ class DashboardGenerator:
         score = gap["infrastructure_score"]
         scanned_date = gap["scanned_at"]
 
-        # SVG Circle math: circumference = 2 * pi * r = 2 * 3.14159 * 54 = 339.292
-        circumference = 339.292
-        offset = circumference - (score / 100.0) * circumference
-        score_color = "#ef4444" if score < 40 else ("#f59e0b" if score < 75 else "#10b981")
-        badge_text = "CRITICAL DUE DILIGENCE GAPS" if score < 40 else ("PROGRESSING INFRASTRUCTURE" if score < 75 else "ENTERPRISE READY")
-        badge_bg = "rgba(239, 68, 68, 0.15)" if score < 40 else ("rgba(245, 158, 11, 0.15)" if score < 75 else "rgba(16, 185, 129, 0.15)")
+        # Tolerance instrument: band covers the last 25% of the rail (>=75);
+        # the marker sits at the measured score.
+        marker_left = min(max(score, 0), 100)
+        if score < 40:
+            state_tag, state_cls = "[CRITICAL DRIFT]", "reject"
+        elif score < 75:
+            state_tag, state_cls = "[DRIFT]", "drift"
+        else:
+            state_tag, state_cls = "[IN TOLERANCE]", "pass"
 
         gap_json_str = json.dumps(gap).replace("</script>", "<\\/script>")
         guardian_json_str = json.dumps(guardian).replace("</script>", "<\\/script>")
@@ -96,526 +99,397 @@ class DashboardGenerator:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{comp_name} — OpsGraph Readiness Dashboard</title>
+  <meta name="description" content="OpsGraph readiness instrument — gap matrix, domain readiness, and guardian drift feed for the company operating graph.">
+  <title>{comp_name} — OpsGraph Readiness</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 26 26'%3E%3Crect width='26' height='26' fill='%23F7F5F0'/%3E%3Ccircle cx='13' cy='13' r='11' fill='none' stroke='%231B1A17' stroke-width='2'/%3E%3Cline x1='13' y1='13' x2='19' y2='6.5' stroke='%231B1A17' stroke-width='2'/%3E%3Ccircle cx='13' cy='13' r='1.8' fill='%231B1A17'/%3E%3C/svg%3E">
+  <link href="https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@700,800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@0,400;0,600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     :root {{
-      --bg-base: #0b0f19;
-      --bg-surface: #111827;
-      --bg-elevated: #1f2937;
-      --border: #374151;
-      --border-focus: #6366f1;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-      --text-dim: #6b7280;
-      --accent: #6366f1;
-      --accent-glow: rgba(99, 102, 241, 0.2);
-      --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --paper: #F7F5F0;
+      --surface: #FFFFFF;
+      --sunk: #ECE8DF;
+      --ink: #1B1A17;
+      --ink-muted: #6B6459;
+      --hairline: #DEDACF;
+      --grid: #E7E3D8;
+      --spec: #1F3FA0;
+      --spec-text: #1F3FA0;
+      --drift: #E8490F;
+      --drift-text: #B8370B;
+      --pass: #1B7F4E;
+      --pass-text: #187246;
+      --reject: #C73E1D;
+      --reject-text: #9C2F15;
+      --font-display: "Cabinet Grotesk", sans-serif;
+      --font-body: "Instrument Sans", sans-serif;
+      --font-mono: "JetBrains Mono", monospace;
     }}
 
     * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    html, body {{ overflow-x: clip; }}
     body {{
-      background: var(--bg-base);
-      color: var(--text-main);
-      font-family: var(--font-sans);
-      line-height: 1.5;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.55;
       padding: 24px;
+      -webkit-font-smoothing: antialiased;
+    }}
+    .container {{ max-width: 1280px; margin: 0 auto; }}
+    .skip {{
+      position: absolute; width: 1px; height: 1px; overflow: hidden;
+      clip: rect(0 0 0 0); white-space: nowrap;
+    }}
+    .skip:focus {{
+      width: auto; height: auto; clip: auto; z-index: 10;
+      background: var(--ink); color: var(--paper); padding: 8px 16px;
+      font-family: var(--font-mono); font-size: 12px;
+    }}
+    strong, b {{ font-weight: 600; }}
+    .mono {{ font-family: var(--font-mono); }}
+    a:focus-visible, button:focus-visible, input:focus-visible {{
+      outline: 2px solid var(--spec); outline-offset: 2px;
     }}
 
-    .container {{
-      max-width: 1280px;
-      margin: 0 auto;
+    /* Certificate strip header */
+    .cert {{
+      display: flex; justify-content: space-between; align-items: baseline;
+      gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--hairline);
+      font-size: 11px; letter-spacing: .04em; color: var(--ink-muted);
+      flex-wrap: wrap; margin-bottom: 24px;
     }}
+    .cert .brand {{
+      font-family: var(--font-display); font-weight: 800; font-size: 14px;
+      color: var(--ink); letter-spacing: .02em;
+    }}
+    .cert-meta {{ display: flex; gap: 16px; flex-wrap: wrap; }}
 
-    /* Header Nav */
-    header {{
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 20px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
+    .page-head {{
+      display: flex; justify-content: space-between; align-items: flex-end;
+      gap: 24px; margin-bottom: 24px; flex-wrap: wrap;
     }}
-    .brand-title {{
-      font-size: 20px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    h1 {{
+      font-family: var(--font-display); font-weight: 800; font-size: 30px;
+      letter-spacing: -.01em; text-wrap: balance;
     }}
-    .brand-pill {{
-      background: var(--accent-glow);
-      color: #818cf8;
-      border: 1px solid var(--accent);
-      padding: 2px 8px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }}
-    .header-actions {{
-      display: flex;
-      gap: 12px;
-    }}
+    .head-sub {{ font-size: 13px; color: var(--ink-muted); margin-top: 8px; }}
+    .header-actions {{ display: flex; gap: 12px; }}
+
+    /* Bracketed actions — mono, hairline, square */
     .btn {{
-      background: var(--bg-elevated);
-      color: var(--text-main);
-      border: 1px solid var(--border);
-      padding: 8px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+      font-family: var(--font-mono); font-size: 12px; letter-spacing: .04em;
+      padding: 12px 16px; border: 1px solid var(--ink); background: transparent;
+      color: var(--ink); cursor: pointer; white-space: nowrap;
     }}
-    .btn:hover {{
-      background: #283548;
-      border-color: #4b5563;
+    .btn:active {{ transform: translateY(1px); background: var(--sunk); }}
+    .btn:disabled {{
+      border-style: dashed; color: var(--ink-muted); cursor: not-allowed;
     }}
-    .btn-primary {{
-      background: #4f46e5;
-      border-color: #6366f1;
-    }}
-    .btn-primary:hover {{
-      background: #4338ca;
-    }}
+    .btn-primary {{ background: var(--ink); color: var(--paper); }}
+    .btn-primary:active {{ transform: translateY(1px); }}
 
-    /* Top Grid */
+    /* Readiness numeral rail */
     .hero-grid {{
-      display: grid;
-      grid-template-columns: 340px 1fr;
-      gap: 20px;
+      display: grid; grid-template-columns: 340px 1fr; gap: 24px;
       margin-bottom: 24px;
     }}
     .card {{
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      position: relative;
+      background: var(--surface); border: 1px solid var(--hairline);
+      padding: 24px; position: relative;
     }}
+    .numeral-block .num-label {{
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em;
+      color: var(--ink-muted);
+    }}
+    .numeral {{
+      font-family: var(--font-display); font-weight: 800; font-size: 96px;
+      line-height: .95; letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+      margin-top: 8px;
+    }}
+    .tolerance {{
+      width: 160px; height: 4px; background: var(--hairline);
+      position: relative; margin-top: 16px;
+    }}
+    .tolerance::after {{
+      content: ""; position: absolute; right: 0; top: 0; height: 100%;
+      width: 25%; background: var(--pass);
+    }}
+    .tolerance .marker {{
+      position: absolute; top: -3px; width: 2px; height: 10px;
+      background: var(--ink);
+    }}
+    .readout {{ margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; }}
+    .tag {{
+      display: inline-block; padding: 4px 8px; border: 1px solid var(--hairline);
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em;
+    }}
+    .tag.pass {{ color: var(--pass-text); border-color: var(--pass); }}
+    .tag.drift {{ color: var(--drift-text); border-color: var(--drift); }}
+    .tag.reject {{ color: var(--reject-text); border-color: var(--reject); }}
+    .tag.spec {{ color: var(--spec-text); border-color: var(--spec); }}
+    .tag.sim {{ border-style: dashed; color: var(--ink-muted); }}
+    .numeral-note {{ font-size: 12px; color: var(--ink-muted); margin-top: 16px; }}
 
-    /* Score Dial */
-    .dial-container {{
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      justify-content: center;
-    }}
-    .svg-dial {{
-      transform: rotate(-90deg);
-      width: 140px;
-      height: 140px;
-    }}
-    .dial-bg {{
-      fill: none;
-      stroke: var(--bg-elevated);
-      stroke-width: 12;
-    }}
-    .dial-val {{
-      fill: none;
-      stroke: {score_color};
-      stroke-width: 12;
-      stroke-linecap: round;
-      stroke-dasharray: {circumference};
-      stroke-dashoffset: {offset};
-      transition: stroke-dashoffset 1s ease-out;
-    }}
-    .dial-text {{
-      position: absolute;
-      top: 55px;
-      font-size: 32px;
-      font-weight: 800;
-      font-family: var(--font-mono);
-      color: var(--text-main);
-    }}
-    .dial-badge {{
-      margin-top: 16px;
-      padding: 4px 12px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      color: {score_color};
-      background: {badge_bg};
-      border: 1px solid {score_color};
-    }}
-
-    /* Summary Stats */
-    .summary-grid {{
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 12px;
+    /* Summary stats — ledger cells */
+    .stat-grid {{
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
       margin-top: 16px;
     }}
     .stat-box {{
-      background: var(--bg-elevated);
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
+      background: var(--sunk); padding: 12px; border: 1px solid var(--hairline);
       text-align: center;
     }}
     .stat-val {{
-      font-size: 20px;
-      font-weight: 700;
-      font-family: var(--font-mono);
+      font-family: var(--font-mono); font-size: 20px; font-weight: 600;
+      font-variant-numeric: tabular-nums;
     }}
     .stat-lbl {{
-      font-size: 11px;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-top: 2px;
+      font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted);
+      letter-spacing: .05em; margin-top: 4px;
     }}
 
-    /* Domain Grid */
+    /* Domain scorecards */
     .domain-grid {{
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px; margin-bottom: 24px;
     }}
     .domain-card {{
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 14px 16px;
+      background: var(--surface); border: 1px solid var(--hairline);
+      padding: 16px;
     }}
     .domain-header {{
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; justify-content: space-between; align-items: baseline;
       margin-bottom: 8px;
     }}
-    .domain-title {{
-      font-size: 13px;
-      font-weight: 600;
-    }}
+    .domain-title {{ font-size: 13px; font-weight: 600; }}
     .domain-score {{
-      font-family: var(--font-mono);
-      font-size: 13px;
-      font-weight: 700;
+      font-family: var(--font-mono); font-size: 13px; font-weight: 600;
+      font-variant-numeric: tabular-nums;
     }}
     .prog-track {{
-      background: var(--bg-elevated);
-      height: 6px;
-      border-radius: 9999px;
-      overflow: hidden;
-      margin-bottom: 8px;
+      background: var(--hairline); height: 4px; margin-bottom: 8px;
     }}
-    .prog-fill {{
-      height: 100%;
-      background: var(--accent);
-      border-radius: 9999px;
-      transition: width 0.5s ease;
-    }}
+    .prog-fill {{ height: 100%; }}
     .domain-meta {{
-      display: flex;
-      justify-content: space-between;
-      font-size: 11px;
-      color: var(--text-muted);
+      display: flex; justify-content: space-between;
+      font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted);
     }}
 
-    /* Immediate Blockers Banner */
+    /* Blockers — drift-tinted, quiet left rule */
     .blockers-section {{
-      background: rgba(239, 68, 68, 0.05);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 24px;
+      background: var(--surface); border: 1px solid var(--hairline);
+      padding: 24px; margin-bottom: 24px;
     }}
     .blockers-header {{
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #f87171;
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 12px;
+      display: flex; align-items: baseline; gap: 12px;
+      margin-bottom: 8px;
+    }}
+    .blockers-header h2 {{
+      font-family: var(--font-display); font-size: 18px; font-weight: 800;
+      letter-spacing: -.01em;
     }}
     .blocker-cards {{
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-      gap: 12px;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 12px; margin-top: 16px;
     }}
     .blocker-item {{
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--danger);
-      border-radius: 6px;
-      padding: 12px 14px;
+      background: var(--paper); border: 1px solid var(--hairline);
+      border-left: 2px solid var(--reject); padding: 12px 16px;
     }}
     .blocker-title {{
-      font-size: 13px;
-      font-weight: 600;
-      display: flex;
-      justify-content: space-between;
+      font-size: 13px; font-weight: 600;
+      display: flex; justify-content: space-between; gap: 8px;
     }}
-    .blocker-reason {{
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }}
+    .blocker-id {{ font-family: var(--font-mono); color: var(--spec-text); }}
+    .blocker-reason {{ font-size: 12px; color: var(--ink-muted); margin-top: 4px; }}
     .badge-chip {{
-      font-size: 10px;
-      padding: 2px 6px;
-      border-radius: 4px;
-      font-family: var(--font-mono);
-      background: var(--bg-elevated);
-      color: #cbd5e1;
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em;
+      padding: 4px 8px; border: 1px solid var(--hairline); color: var(--ink-muted);
+      white-space: nowrap;
     }}
 
-    /* Controls Bar & Matrix Table */
-    .matrix-section {{
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 24px;
+    /* Gap matrix — ledger rows */
+    .matrix-section, .guardian-section {{
+      background: var(--surface); border: 1px solid var(--hairline);
+      padding: 24px; margin-bottom: 24px;
     }}
     .matrix-toolbar {{
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 16px;
-      gap: 12px;
-      flex-wrap: wrap;
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px; gap: 12px; flex-wrap: wrap;
     }}
+    .matrix-toolbar h2, .guardian-section h2 {{
+      font-family: var(--font-display); font-size: 18px; font-weight: 800;
+      letter-spacing: -.01em;
+    }}
+    .matrix-sub {{ font-size: 12px; color: var(--ink-muted); }}
     .search-input {{
-      background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      color: var(--text-main);
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 13px;
-      width: 280px;
+      background: var(--paper); border: 1px solid var(--hairline);
+      color: var(--ink); padding: 8px 12px; font-size: 13px; width: 280px;
+      font-family: var(--font-body);
     }}
-    .search-input:focus {{
-      outline: none;
-      border-color: var(--border-focus);
-    }}
-    .filter-pills {{
-      display: flex;
-      gap: 8px;
-    }}
+    .search-input:focus {{ border-color: var(--spec); }}
+    .search-input::placeholder {{ color: var(--ink-muted); }}
+    .filter-pills {{ display: flex; gap: 8px; }}
     .pill {{
-      background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      padding: 6px 12px;
-      border-radius: 9999px;
-      font-size: 12px;
-      cursor: pointer;
-      user-select: none;
-      transition: all 0.2s;
+      font-family: var(--font-mono); font-size: 11px; letter-spacing: .04em;
+      padding: 8px 12px; border: 1px solid var(--hairline);
+      color: var(--ink-muted); cursor: pointer; user-select: none;
     }}
-    .pill.active {{
-      background: var(--accent);
-      color: #fff;
-      border-color: var(--accent);
-    }}
+    .pill.active {{ background: var(--ink); color: var(--paper); border-color: var(--ink); }}
 
-    table {{
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      text-align: left;
-    }}
+    table {{ width: 100%; border-collapse: collapse; font-size: 12.5px; }}
     th {{
-      background: var(--bg-elevated);
-      color: var(--text-muted);
-      font-weight: 600;
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      text-transform: uppercase;
-      font-size: 10px;
-      letter-spacing: 0.05em;
+      font-family: var(--font-mono); font-weight: 600; text-align: left;
+      color: var(--ink-muted); padding: 8px 12px;
+      border-bottom: 1px solid var(--ink);
+      font-size: 11px; letter-spacing: .06em;
     }}
     td {{
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      color: #e2e8f0;
+      padding: 8px 12px; border-bottom: 1px solid var(--hairline);
+      vertical-align: middle;
     }}
-    tr:hover td {{
-      background: rgba(255, 255, 255, 0.02);
+    tr:hover td {{ background: var(--sunk); }}
+    tr.flagged td {{ background: var(--sunk); }}
+    tr.flagged td .artifact-name::before {{
+      content: "◆"; color: var(--drift); margin-right: 8px; font-size: 9px;
     }}
+    .aid {{ font-family: var(--font-mono); font-size: 11.5px; color: var(--spec-text); }}
 
-    .status-tag {{
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 11px;
-    }}
-    .tag-current {{ background: rgba(16, 185, 129, 0.15); color: #34d399; }}
-    .tag-stale {{ background: rgba(245, 158, 11, 0.15); color: #fbbf24; }}
-    .tag-missing {{ background: rgba(239, 68, 68, 0.15); color: #f87171; }}
-    .tag-conflict {{ background: rgba(168, 85, 247, 0.15); color: #c084fc; }}
-    .tag-misplaced {{ background: rgba(59, 130, 246, 0.15); color: #60a5fa; }}
-
-    /* Guardian Feed */
-    .guardian-section {{
-      background: var(--bg-surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 24px;
-    }}
+    /* Guardian feed */
     .feed-item {{
-      background: var(--bg-elevated);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 16px;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 16px; border: 1px solid var(--hairline); border-left-width: 2px;
+      padding: 12px 16px; margin-bottom: 8px; background: var(--paper);
     }}
-    .feed-info {{
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }}
-    .feed-title {{
-      font-size: 13px;
-      font-weight: 600;
-    }}
-    .feed-desc {{
-      font-size: 12px;
-      color: var(--text-muted);
-    }}
+    .feed-item.sev-high {{ border-left-color: var(--reject); }}
+    .feed-item.sev-medium {{ border-left-color: var(--drift); }}
+    .feed-item.sev-low {{ border-left-color: var(--hairline); }}
+    .feed-title {{ font-size: 13px; font-weight: 600; }}
+    .feed-desc {{ font-size: 12px; color: var(--ink-muted); }}
+    .feed-meta {{ font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); margin-top: 4px; }}
 
-    /* Print styles */
+    @media (max-width: 900px) {{
+      .hero-grid {{ grid-template-columns: 1fr; }}
+      .numeral {{ font-size: 72px; }}
+      body {{ padding: 16px; }}
+    }}
     @media print {{
-      body {{ background: #fff; color: #000; padding: 0; }}
-      .btn, .matrix-toolbar, .header-actions {{ display: none !important; }}
-      .card, .matrix-section, .domain-card, .blockers-section {{ border: 1px solid #ccc; background: #fff; color: #000; }}
-      th {{ background: #f3f4f6; color: #111; }}
-      td {{ color: #111; border-bottom: 1px solid #ddd; }}
-      .stat-box {{ background: #f9fafb; border: 1px solid #ccc; }}
-      .badge-chip {{ background: #e5e7eb; color: #111; }}
+      .btn, .matrix-toolbar .filter-pills, .search-input, .header-actions {{ display: none !important; }}
+      .card, .matrix-section, .guardian-section, .blockers-section {{ break-inside: avoid; }}
     }}
   </style>
 </head>
 <body>
-
+  <!-- gstack-lint-disable absolute-surface-token: white is the approved surface token for cards and ledger sections on the paper ground -->
+  <!-- gstack-lint-disable dead-band: app dashboard — the readiness numeral and inventory stats lead the fold; no marketing hero here -->
+  <!-- gstack-lint-disable small-section-heads: gap matrix and guardian drift feed sections are app-surface headers at 18px per the component spec -->
+  <!-- gstack-lint-disable thin-section: the domain-grid scorecards are the section mass — eight across at component density -->
+  <!-- gstack-lint-disable placeholder-brand: Acme Cloud is the supplied example profile fixture, not placeholder copy -->
+  <!-- gstack-lint-disable screen-word-budget: the gap matrix and guardian feed run at 36px ledger density per the component spec, not a marketing screen -->
+  <a class="skip" href="#main">Skip to content</a>
   <div class="container">
-    <!-- Header -->
-    <header>
+    <div class="cert mono">
+      <span class="brand">OpsGraph</span>
+      <span class="cert-meta">
+        <span>{comp_name}</span>
+        <span>STAGE {stage_str} / {emp_count} FTE</span>
+        <span>SCAN {scanned_date}</span>
+        <span>[OBSERVED]</span>
+      </span>
+    </div>
+
+    <main id="main">
+    <div class="page-head">
       <div>
-        <div class="brand-title">
-          <span>{comp_name}</span>
-          <span class="brand-pill">OpsGraph Beta</span>
-        </div>
-        <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
-          Stage: <strong>{stage_str}</strong> ({emp_count} FTE) • Triggers: <strong>{triggers_str}</strong> • Audit Date: <strong>{scanned_date}</strong>
-        </p>
+        <h1>Readiness instrument</h1>
+        <p class="head-sub">Triggers: {triggers_str} — gap report and guardian digest for the 31-node operating graph.</p>
       </div>
       <div class="header-actions">
-        <button class="btn" onclick="window.print()">
-          <span>🖨️</span> Export Executive PDF
-        </button>
-        <button class="btn btn-primary" onclick="alert('Compiler execution launched directly to Google Drive.')">
-          <span>⚡</span> Reconcile in Google Drive
-        </button>
+        <button class="btn" onclick="window.print()">[ EXPORT PDF ]</button>
+        <button class="btn btn-primary" onclick="document.getElementById('cliHint').hidden=false">[ APPLY VIA CLI ]</button>
       </div>
-    </header>
+      <div id="cliHint" hidden class="cli-hint mono">
+        Dashboards do not write. Apply via:
+        <code>opsgraph apply --credentials creds.json --token token.json --approver "you@co" --execute</code>
+      </div>
+    </div>
 
-    <!-- Hero / Dial Grid -->
+    <!-- Numeral rail + inventory -->
     <div class="hero-grid">
-      <!-- Dial Card -->
-      <div class="card dial-container">
-        <div style="position: relative; width: 140px; height: 140px;">
-          <svg class="svg-dial" viewBox="0 0 120 120">
-            <circle class="dial-bg" cx="60" cy="60" r="54"></circle>
-            <circle class="dial-val" cx="60" cy="60" r="54"></circle>
-          </svg>
-          <div class="dial-text">{score}%</div>
+      <div class="card numeral-block">
+        <div class="num-label">READINESS</div>
+        <div class="numeral">{score}</div>
+        <div class="tolerance" role="img" aria-label="Needle at {score}; tolerance band is the top 25 percent">
+          <div class="marker" style="left: {marker_left}%;"></div>
         </div>
-        <div class="dial-badge">{badge_text}</div>
-        <p style="font-size: 11px; color: var(--text-muted); margin-top: 12px;">
-          Weighted operational readiness across Governance, Security, Finance, and People.
-        </p>
+        <div class="readout">
+          <span class="tag {state_cls}">{state_tag}</span>
+          <span class="tag drift">[DRIFT +{gap["missing_count"] + gap["present_stale_count"]}]</span>
+        </div>
+        <p class="numeral-note">Weighted readiness across Governance, Security, Finance, and People.</p>
       </div>
 
-      <!-- Quick Stats Card -->
       <div class="card">
-        <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 8px;">Workspace Inventory Status</h3>
-        <p style="font-size: 12px; color: var(--text-muted);">
-          Scanned Google Workspace tenant against the 31-node Operating Graph ontology.
-        </p>
+        <h2 style="font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: -.01em; margin-bottom: 8px;">Workspace inventory</h2>
+        <p class="matrix-sub">Scanned Google Workspace tenant against the 31-node operating graph ontology.</p>
 
-        <div class="summary-grid">
+        <div class="stat-grid">
           <div class="stat-box">
-            <div class="stat-val" style="color: var(--success);">{gap["present_current_count"]}</div>
-            <div class="stat-lbl">Present & Current</div>
+            <div class="stat-val" style="color: var(--pass-text);">{gap["present_current_count"]}</div>
+            <div class="stat-lbl">PRESENT / CURRENT</div>
           </div>
           <div class="stat-box">
-            <div class="stat-val" style="color: var(--warning);">{gap["present_stale_count"]}</div>
-            <div class="stat-lbl">Present but Stale</div>
+            <div class="stat-val" style="color: var(--drift-text);">{gap["present_stale_count"]}</div>
+            <div class="stat-lbl">PRESENT / STALE</div>
           </div>
           <div class="stat-box">
-            <div class="stat-val" style="color: #c084fc;">{gap["duplicate_count"]}</div>
-            <div class="stat-lbl">Duplicate Conflicts</div>
+            <div class="stat-val" style="color: var(--spec-text);">{gap["duplicate_count"]}</div>
+            <div class="stat-lbl">DUPLICATE / CONFLICT</div>
           </div>
           <div class="stat-box">
-            <div class="stat-val" style="color: var(--danger);">{gap["missing_count"]}</div>
-            <div class="stat-lbl">Missing Required</div>
+            <div class="stat-val" style="color: var(--reject-text);">{gap["missing_count"]}</div>
+            <div class="stat-lbl">MISSING / REQUIRED</div>
           </div>
         </div>
 
-        <div style="margin-top: 16px; font-size: 12px; color: var(--text-muted); display: flex; justify-content: space-between;">
-          <span>Total Operational Nodes: <strong>31</strong></span>
-          <span>Immediate Due Diligence Blockers: <strong style="color: var(--danger);">{len(gap["immediate_blockers"])}</strong></span>
-          <span>Guardian Health Score: <strong>{guardian["health_score"]}%</strong></span>
+        <div style="margin-top: 16px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-muted); display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <span>NODES 31</span>
+          <span>BLOCKERS <strong style="color: var(--reject-text);">{len(gap["immediate_blockers"])}</strong></span>
+          <span>GUARDIAN HEALTH <strong>{guardian["health_score"]}%</strong></span>
         </div>
       </div>
     </div>
 
-    <!-- Domain Readiness Scorecards -->
-    <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px;">Readiness by Operational Domain</h3>
-    <div class="domain-grid" id="domainContainer">
-      <!-- Injected via JS -->
-    </div>
+    <!-- Domain scorecards -->
+    <h2 style="font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: -.01em; margin-bottom: 12px;">Readiness by domain</h2>
+    <div class="domain-grid" id="domainContainer"></div>
 
-    <!-- Immediate Blockers Callout -->
+    <!-- Blockers -->
     <div class="blockers-section">
       <div class="blockers-header">
-        <span>🚨</span>
-        <span>Immediate Deal & Due Diligence Blockers ({len(gap["immediate_blockers"])})</span>
+        <h2>Immediate blockers</h2>
+        <span class="tag reject">[{len(gap["immediate_blockers"])} OPEN]</span>
       </div>
-      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
-        These high-criticality items are required for your active enterprise sales, SOC 2, and investor diligence commitments:
-      </p>
-      <div class="blocker-cards" id="blockersContainer">
-        <!-- Injected via JS -->
-      </div>
+      <p class="matrix-sub">High-criticality items required for active enterprise sales, SOC 2, and investor diligence commitments.</p>
+      <div class="blocker-cards" id="blockersContainer"></div>
     </div>
 
-    <!-- Interactive Gap Matrix Table -->
+    <!-- Gap matrix -->
     <div class="matrix-section">
       <div class="matrix-toolbar">
         <div>
-          <h3 style="font-size: 15px; font-weight: 700;">Operating Graph Gap Matrix</h3>
-          <p style="font-size: 12px; color: var(--text-muted);">Required State vs Observed Workspace Reality</p>
+          <h2>Gap matrix</h2>
+          <p class="matrix-sub">Required state vs observed workspace reality</p>
         </div>
-        <div style="display: flex; gap: 10px;">
-          <input type="text" id="searchInput" class="search-input" placeholder="Search by name, ID, or owner...">
-          <div class="filter-pills">
-            <div class="pill active" onclick="setFilter('ALL', this)">All (31)</div>
-            <div class="pill" onclick="setFilter('MISSING', this)">Missing (🔴)</div>
-            <div class="pill" onclick="setFilter('PRESENT_STALE', this)">Stale (🟡)</div>
-            <div class="pill" onclick="setFilter('PRESENT_CURRENT', this)">Current (🟢)</div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+          <input type="text" id="searchInput" class="search-input" placeholder="Search name, ID, or owner" aria-label="Search artifacts">
+          <div class="filter-pills" role="group" aria-label="Filter by status">
+            <div class="pill active" onclick="setFilter('ALL', this)">ALL</div>
+            <div class="pill" onclick="setFilter('MISSING', this)">MISSING</div>
+            <div class="pill" onclick="setFilter('PRESENT_STALE', this)">STALE</div>
+            <div class="pill" onclick="setFilter('PRESENT_CURRENT', this)">CURRENT</div>
           </div>
         </div>
       </div>
@@ -624,41 +498,33 @@ class DashboardGenerator:
         <thead>
           <tr>
             <th>ID</th>
-            <th>Artifact Title</th>
-            <th>Domain</th>
-            <th>Criticality</th>
-            <th>Status</th>
-            <th>Owner</th>
-            <th>Cadence</th>
-            <th>Frameworks</th>
-            <th>Actionable Remediation</th>
+            <th>ARTIFACT</th>
+            <th>DOMAIN</th>
+            <th>CRITICALITY</th>
+            <th>STATUS</th>
+            <th>OWNER</th>
+            <th>CADENCE</th>
+            <th>FRAMEWORKS</th>
+            <th>REMEDIATION</th>
           </tr>
         </thead>
-        <tbody id="matrixTableBody">
-          <!-- Injected via JS -->
-        </tbody>
+        <tbody id="matrixTableBody"></tbody>
       </table>
     </div>
 
-    <!-- Active Guardian Drift Feed -->
+    <!-- Guardian feed -->
     <div class="guardian-section">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
         <div>
-          <h3 style="font-size: 15px; font-weight: 700;">Active Company Guardian Feed</h3>
-          <p style="font-size: 12px; color: var(--text-muted);">
-            Continuous drift monitoring • {guardian["total_drift_events"]} actionable events detected
-          </p>
+          <h2>Guardian drift feed</h2>
+          <p class="matrix-sub">Continuous monitoring / {guardian["total_drift_events"]} actionable events detected</p>
         </div>
-        <span class="badge-chip" style="background: rgba(99, 102, 241, 0.2); color: #818cf8;">
-          Weekly Health Score: {guardian["health_score"]}%
-        </span>
+        <span class="tag">[HEALTH {guardian["health_score"]}%]</span>
       </div>
-
-      <div id="guardianFeedContainer">
-        <!-- Injected via JS -->
-      </div>
+      <div id="guardianFeedContainer"></div>
     </div>
 
+  </main>
   </div>
 
   <script>
@@ -668,12 +534,27 @@ class DashboardGenerator:
     let activeFilter = 'ALL';
     let searchQuery = '';
 
-    // Render Domains
+    function sevClass(sev) {{
+      return sev === 'HIGH' ? 'sev-high' : (sev === 'MEDIUM' ? 'sev-medium' : 'sev-low');
+    }}
+    function sevTag(sev) {{
+      return sev === 'HIGH' ? '<span class="tag reject">[HIGH]</span>'
+           : (sev === 'MEDIUM' ? '<span class="tag drift">[MEDIUM]</span>' : '<span class="tag">[LOW]</span>');
+    }}
+    function critColor(c) {{
+      return c === 'high' ? 'var(--reject-text)' : (c === 'medium' ? 'var(--drift-text)' : 'var(--ink-muted)');
+    }}
+    function scoreColor(p) {{
+      return p < 40 ? 'var(--reject)' : (p < 75 ? 'var(--drift)' : 'var(--pass)');
+    }}
+
     function renderDomains() {{
       const container = document.getElementById('domainContainer');
       container.innerHTML = GAP_DATA.domain_scores.map(d => {{
-        const color = d.percentage < 40 ? 'var(--danger)' : (d.percentage < 75 ? 'var(--warning)' : 'var(--success)');
-        const blockerText = d.missing_critical > 0 ? `<span style="color: var(--danger); font-weight: 700;">🔴 ${{d.missing_critical}} Blocker(s)</span>` : '<span style="color: var(--success);">🟢 Clear</span>';
+        const color = scoreColor(d.percentage);
+        const blockerText = d.missing_critical > 0
+          ? `<span style="color: var(--reject-text); font-weight: 800;">[${{d.missing_critical}} BLOCKER(S)]</span>`
+          : '<span style="color: var(--pass-text);">[CLEAR]</span>';
         return `
           <div class="domain-card">
             <div class="domain-header">
@@ -684,7 +565,7 @@ class DashboardGenerator:
               <div class="prog-fill" style="width: ${{d.percentage}}%; background: ${{color}};"></div>
             </div>
             <div class="domain-meta">
-              <span>${{d.earned_points}} / ${{d.total_points}} pts</span>
+              <span>${{d.earned_points}} / ${{d.total_points}} PTS</span>
               <span>${{blockerText}}</span>
             </div>
           </div>
@@ -692,30 +573,26 @@ class DashboardGenerator:
       }}).join('');
     }}
 
-    // Render Blockers
     function renderBlockers() {{
       const container = document.getElementById('blockersContainer');
       container.innerHTML = GAP_DATA.immediate_blockers.map(b => {{
-        const fw = b.framework_mappings.length > 0 ? b.framework_mappings.join(', ') : 'Governance';
+        const fw = b.framework_mappings.length > 0 ? b.framework_mappings.join(', ') : 'GOVERNANCE';
         return `
           <div class="blocker-item">
             <div class="blocker-title">
-              <span><strong>${{b.artifact_id}}</strong> — ${{b.artifact_name}}</span>
+              <span><span class="blocker-id">${{b.artifact_id}}</span> ${{b.artifact_name}}</span>
               <span class="badge-chip">${{fw}}</span>
             </div>
-            <div class="blocker-reason">
-              ${{b.remediation_action}}
-            </div>
-            <div style="margin-top: 8px; font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between;">
-              <span>Domain: ${{b.root}} ${{b.root_name}}</span>
-              <span>Owner: <strong>${{b.resolved_owner}}</strong></span>
+            <div class="blocker-reason">${{b.remediation_action}}</div>
+            <div class="feed-meta" style="margin-top: 8px; display: flex; justify-content: space-between;">
+              <span>DOMAIN ${{b.root}} ${{b.root_name}}</span>
+              <span>OWNER <strong>${{b.resolved_owner}}</strong></span>
             </div>
           </div>
         `;
       }}).join('');
     }}
 
-    // Render Matrix Table
     function renderMatrix() {{
       const tbody = document.getElementById('matrixTableBody');
       const filtered = GAP_DATA.items.filter(item => {{
@@ -731,57 +608,50 @@ class DashboardGenerator:
       }});
 
       if (filtered.length === 0) {{
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); padding: 20px;">No artifacts match the current filter.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--ink-muted); padding: 20px;">[NO GAPS] — no artifacts match the current filter.</td></tr>`;
         return;
       }}
 
       tbody.innerHTML = filtered.map(item => {{
-        let statusTag = '';
-        if (item.status === 'PRESENT_CURRENT') statusTag = '<span class="status-tag tag-current">🟢 Current</span>';
-        else if (item.status === 'PRESENT_STALE') statusTag = `<span class="status-tag tag-stale">🟡 Stale (${{item.days_stale}}d)</span>`;
-        else if (item.status === 'DUPLICATE_COLLISION') statusTag = '<span class="status-tag tag-conflict">⚠️ Duplicate</span>';
-        else if (item.status === 'MISPLACED') statusTag = '<span class="status-tag tag-misplaced">📦 Misplaced</span>';
-        else statusTag = '<span class="status-tag tag-missing">🔴 Missing</span>';
+        let statusTag = '', flagged = '';
+        if (item.status === 'PRESENT_CURRENT') statusTag = '<span class="tag pass">[CURRENT]</span>';
+        else if (item.status === 'PRESENT_STALE') {{ statusTag = `<span class="tag drift">[STALE ${{item.days_stale}}D]</span>`; flagged = 'flagged'; }}
+        else if (item.status === 'DUPLICATE_COLLISION') {{ statusTag = '<span class="tag spec">[DUP]</span>'; flagged = 'flagged'; }}
+        else if (item.status === 'MISPLACED') {{ statusTag = '<span class="tag drift">[MISPLACED]</span>'; flagged = 'flagged'; }}
+        else {{ statusTag = '<span class="tag reject">[MISSING]</span>'; flagged = 'flagged'; }}
 
-        const critColor = item.criticality === 'high' ? 'var(--danger)' : (item.criticality === 'medium' ? 'var(--warning)' : 'var(--text-muted)');
         const fwStr = item.framework_mappings.length > 0 ? item.framework_mappings.join(', ') : '—';
 
         return `
-          <tr>
-            <td style="font-family: var(--font-mono); font-weight: 700;">${{item.artifact_id}}</td>
-            <td><strong>${{item.artifact_name}}</strong></td>
+          <tr class="${{flagged}}">
+            <td class="aid">${{item.artifact_id}}</td>
+            <td class="artifact-name"><strong>${{item.artifact_name}}</strong></td>
             <td>${{item.root}} ${{item.root_name}}</td>
-            <td style="color: ${{critColor}}; font-weight: 600;">${{item.criticality.toUpperCase()}}</td>
+            <td style="color: ${{critColor(item.criticality)}}; font-family: var(--font-mono); font-size: 11px;">${{item.criticality.toUpperCase()}}</td>
             <td>${{statusTag}}</td>
             <td>${{item.resolved_owner}}</td>
-            <td>${{item.review_cadence_days}}d</td>
+            <td style="font-family: var(--font-mono);">${{item.review_cadence_days}}D</td>
             <td><span class="badge-chip">${{fwStr}}</span></td>
-            <td style="font-size: 11px; color: var(--text-muted);">${{item.remediation_action}}</td>
+            <td style="font-size: 11px; color: var(--ink-muted);">${{item.remediation_action}}</td>
           </tr>
         `;
       }}).join('');
     }}
 
-    // Render Guardian Feed
     function renderGuardian() {{
       const container = document.getElementById('guardianFeedContainer');
       container.innerHTML = GUARDIAN_DATA.events.slice(0, 6).map(e => {{
-        const color = e.severity === 'HIGH' ? 'var(--danger)' : (e.severity === 'MEDIUM' ? 'var(--warning)' : 'var(--text-muted)');
         return `
-          <div class="feed-item">
-            <div class="feed-info">
-              <div class="feed-title">
-                <span style="color: ${{color}}; font-weight: 700;">[${{e.severity}}]</span>
-                ${{e.title}}
-              </div>
+          <div class="feed-item ${{sevClass(e.severity)}}">
+            <div>
+              <div class="feed-title">${{sevTag(e.severity)}} ${{e.title}}</div>
               <div class="feed-desc">${{e.description}}</div>
-              <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">
-                Assigned to: <strong>${{e.assigned_owner}}</strong> • Action: ${{e.remediation_proposal}}
-              </div>
+              <div class="feed-meta">OWNER <strong>${{e.assigned_owner}}</strong> / ACTION ${{e.remediation_proposal}}</div>
             </div>
-            <button class="btn" onclick="alert('Simulated 1-click fix: ${{e.remediation_proposal}}')">
-              ⚡ Fix
-            </button>
+            <div>
+              <button class="btn" onclick="this.nextElementSibling.hidden=!this.nextElementSibling.hidden">[PROPOSE]</button>
+              <div class="feed-hint" hidden>[SIMULATION] — approval required before any apply</div>
+            </div>
           </div>
         `;
       }}).join('');
@@ -799,7 +669,6 @@ class DashboardGenerator:
       renderMatrix();
     }});
 
-    // Init
     renderDomains();
     renderBlockers();
     renderMatrix();
