@@ -868,7 +868,7 @@ def main():
     # history
     p_hist = subparsers.add_parser("history", help="List recorded engine runs from the store")
     p_hist.add_argument("--company-id", default=None, help="Filter by company")
-    p_hist.add_argument("--type", choices=["scan", "resolve", "gap", "compile", "guardian"], default=None)
+    p_hist.add_argument("--type", choices=["scan", "resolve", "gap", "compile", "guardian", "apply", "reverse"], default=None)
     p_hist.add_argument("--run-id", type=int, default=None, help="Print a single run payload")
     p_hist.add_argument("--limit", type=int, default=20)
     p_hist.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
