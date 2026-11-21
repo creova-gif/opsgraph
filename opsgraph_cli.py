@@ -39,7 +39,7 @@ from guardian.digest import diff_digests, format_digest_delta
 from guardian.guardian import CompanyGuardian, format_health_digest_markdown, load_register_entries
 from integrations.consul import ConsulClient, ConsulUnavailable, HTTPConsulClient, StubConsulClient
 from inventory.drive_source import GoogleDriveSource, merge_delta
-from inventory.scanner import LocalDirectorySource, SnapshotSource, WorkspaceScanner
+from inventory.scanner import LocalDirectorySource, SnapshotSource, WorkspaceScanner, snapshot_from_data
 from plan.planner import build_plan, format_plan_markdown
 from qa.answerer import CompanyAnswerer
 from resolver.resolver import StateResolver, format_markdown
@@ -68,6 +68,43 @@ def _record_run(args, run_type: str, payload: dict, summary: str,
         sys.stderr.write(f"run not recorded: {e}\n")
     finally:
         store.close()
+
+
+def _load_profile_snapshot(args):
+    """Resolve (profile_data, inventory_snapshot) for read commands.
+
+    With --company-id: the saved profile plus the newest recorded `scan` run's
+    payload — recorded runs become queryable state instead of write-only.
+    Otherwise: the profile/inventory file paths, as before."""
+    company_id = getattr(args, "company_id", None)
+    if company_id:
+        db_path = Path(getattr(args, "db", None) or DEFAULT_DB_PATH)
+        store = ProfileStore(db_path)
+        try:
+            profile_data = store.get_profile(company_id)
+            if profile_data is None:
+                sys.stderr.write(
+                    f"Error: no saved profile for '{company_id}' — run `profile save` first\n")
+                sys.exit(1)
+            scan_runs = store.list_runs(company_id, run_type="scan", limit=1)
+            if not scan_runs:
+                sys.stderr.write(
+                    f"Error: no recorded scan for '{company_id}' — run `scan --record` first\n")
+                sys.exit(1)
+            snapshot = snapshot_from_data(store.get_run(scan_runs[0]["id"])["payload"])
+        finally:
+            store.close()
+        return profile_data, snapshot
+
+    profile_arg = getattr(args, "profile", None)
+    inventory_arg = getattr(args, "inventory", None)
+    if not profile_arg or not inventory_arg:
+        sys.stderr.write(
+            "Error: pass profile + inventory paths, or --company-id to load them from the store\n")
+        sys.exit(1)
+    with open(profile_arg, "r", encoding="utf-8") as f:
+        profile_data = json.load(f)
+    return profile_data, WorkspaceScanner().load_snapshot(Path(inventory_arg))
 
 
 def cmd_resolve(args):
@@ -206,14 +243,7 @@ def cmd_scan(args):
 
 
 def cmd_gap(args):
-    profile_path = Path(args.profile)
-    inventory_path = Path(args.inventory)
-
-    with open(profile_path, "r", encoding="utf-8") as f:
-        profile_data = json.load(f)
-
-    scanner = WorkspaceScanner()
-    inventory_snapshot = scanner.load_snapshot(inventory_path)
+    profile_data, inventory_snapshot = _load_profile_snapshot(args)
 
     resolver = StateResolver()
     resolution = resolver.resolve(profile_data)
@@ -750,9 +780,7 @@ def cmd_status(args):
 
 def cmd_ask(args):
     """Deterministic 'Ask Company' Q&A over the operating graph (Phase 4 Mode A floor)."""
-    with open(args.profile, "r", encoding="utf-8") as f:
-        profile_data = json.load(f)
-    inventory_snapshot = WorkspaceScanner().load_snapshot(Path(args.inventory))
+    profile_data, inventory_snapshot = _load_profile_snapshot(args)
 
     answer = CompanyAnswerer().ask(args.question, profile_data, inventory_snapshot)
 
@@ -776,9 +804,7 @@ def cmd_ask(args):
 
 def cmd_plan(args):
     """Deterministic remediation plan: phased, dependency-ordered gap fixes."""
-    with open(args.profile, "r", encoding="utf-8") as f:
-        profile_data = json.load(f)
-    inventory_snapshot = WorkspaceScanner().load_snapshot(Path(args.inventory))
+    profile_data, inventory_snapshot = _load_profile_snapshot(args)
 
     resolver = StateResolver()
     resolution = resolver.resolve(profile_data)
@@ -824,9 +850,7 @@ def cmd_digest(args):
 
 def cmd_certificate(args):
     """Generate the Operational Readiness Certificate from real engine output."""
-    with open(args.profile, "r", encoding="utf-8") as f:
-        profile_data = json.load(f)
-    inventory_snapshot = WorkspaceScanner().load_snapshot(Path(args.inventory))
+    profile_data, inventory_snapshot = _load_profile_snapshot(args)
 
     html = CertificateGenerator().generate(
         profile_data, inventory_snapshot,
@@ -839,12 +863,7 @@ def cmd_certificate(args):
 
 
 def cmd_dashboard(args):
-    profile_path = Path(args.profile)
-    with open(profile_path, "r", encoding="utf-8") as f:
-        profile_data = json.load(f)
-
-    scanner = WorkspaceScanner()
-    inventory_snapshot = scanner.load_snapshot(Path(args.inventory))
+    profile_data, inventory_snapshot = _load_profile_snapshot(args)
 
     gen = DashboardGenerator()
     out_path = Path(args.output).resolve()
@@ -911,8 +930,9 @@ def main():
 
     # gap
     p_gap = subparsers.add_parser("gap", help="Compare required vs observed state; output Infrastructure Score")
-    p_gap.add_argument("profile", help="Path to company profile JSON")
-    p_gap.add_argument("inventory", help="Path to workspace inventory JSON")
+    p_gap.add_argument("profile", nargs="?", help="Path to company profile JSON (omit with --company-id)")
+    p_gap.add_argument("inventory", nargs="?", help="Path to workspace inventory JSON (omit with --company-id)")
+    p_gap.add_argument("--company-id", default=None, help="Load saved profile + latest recorded scan from the store")
     p_gap.add_argument("--format", choices=["markdown", "json"], default="markdown")
     p_gap.add_argument("--record", action="store_true", help="Persist this run to the store")
     p_gap.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
@@ -995,8 +1015,9 @@ def main():
     # ask
     p_ask = subparsers.add_parser("ask", help="Deterministic Q&A over the operating graph (Ask Company)")
     p_ask.add_argument("question", help="Question, e.g. 'do we have a master document register?'")
-    p_ask.add_argument("--profile", required=True, help="Path to company profile JSON")
-    p_ask.add_argument("--inventory", required=True, help="Path to workspace inventory JSON")
+    p_ask.add_argument("--profile", default=None, help="Path to company profile JSON (omit with --company-id)")
+    p_ask.add_argument("--inventory", default=None, help="Path to workspace inventory JSON (omit with --company-id)")
+    p_ask.add_argument("--company-id", default=None, help="Load saved profile + latest recorded scan from the store")
     p_ask.add_argument("--format", choices=["markdown", "json"], default="markdown")
     p_ask.add_argument("--record", action="store_true", help="Persist this run to the store")
     p_ask.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
@@ -1004,8 +1025,9 @@ def main():
 
     # plan
     p_plan = subparsers.add_parser("plan", help="Dependency-ordered remediation plan (deterministic Mode C)")
-    p_plan.add_argument("--profile", required=True, help="Path to company profile JSON")
-    p_plan.add_argument("--inventory", required=True, help="Path to workspace inventory JSON")
+    p_plan.add_argument("--profile", default=None, help="Path to company profile JSON (omit with --company-id)")
+    p_plan.add_argument("--inventory", default=None, help="Path to workspace inventory JSON (omit with --company-id)")
+    p_plan.add_argument("--company-id", default=None, help="Load saved profile + latest recorded scan from the store")
     p_plan.add_argument("--format", choices=["markdown", "json"], default="markdown")
     p_plan.add_argument("--record", action="store_true", help="Persist this run to the store")
     p_plan.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
@@ -1020,8 +1042,10 @@ def main():
 
     # certificate
     p_cert = subparsers.add_parser("certificate", help="Generate the Operational Readiness Certificate (single-file HTML)")
-    p_cert.add_argument("profile", help="Path to company profile JSON")
-    p_cert.add_argument("inventory", help="Path to workspace inventory JSON")
+    p_cert.add_argument("profile", nargs="?", help="Path to company profile JSON (omit with --company-id)")
+    p_cert.add_argument("inventory", nargs="?", help="Path to workspace inventory JSON (omit with --company-id)")
+    p_cert.add_argument("--company-id", default=None, help="Load saved profile + latest recorded scan from the store")
+    p_cert.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_cert.add_argument("--output", default="certificate.html", help="Output HTML file path")
     p_cert.add_argument("--approver", default=None, help="Approver identity for the CHAIN/approver field")
     p_cert.add_argument("--run-ref", default=None, help="Run reference (e.g. 'run #7 / apply pending approval')")
@@ -1029,8 +1053,10 @@ def main():
 
     # dashboard
     p_dash = subparsers.add_parser("dashboard", help="Generate single-file interactive HTML readiness dashboard")
-    p_dash.add_argument("profile", help="Path to company profile JSON")
-    p_dash.add_argument("inventory", help="Path to workspace inventory JSON")
+    p_dash.add_argument("profile", nargs="?", help="Path to company profile JSON (omit with --company-id)")
+    p_dash.add_argument("inventory", nargs="?", help="Path to workspace inventory JSON (omit with --company-id)")
+    p_dash.add_argument("--company-id", default=None, help="Load saved profile + latest recorded scan from the store")
+    p_dash.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_dash.add_argument("--output", default="dashboard.html", help="Output HTML file path")
     p_dash.add_argument("--open", action="store_true", help="Open generated dashboard in default browser")
     p_dash.set_defaults(func=cmd_dashboard)

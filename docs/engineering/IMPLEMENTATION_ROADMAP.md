@@ -92,6 +92,13 @@ the linkage between them: `apply --from-plan <run_id>` executes a recorded
 plan's ordered steps through the unchanged approval gate — plan defines
 scope, the decision ledger still defines permission.
 
+Recorded state is also readable now, not write-only: `gap`, `ask`, `plan`,
+`certificate`, and `dashboard` accept `--company-id` to resolve the saved
+profile + newest recorded `scan` payload straight from the store — record
+once (`profile save` + `scan --record`), query anytime. That makes the
+Phase 1 store a true system of record instead of an audit sink, and it's
+the shape the Phase 5 multi-tenant backend will serve over HTTP.
+
 ## Phase 5 — Commercial SaaS
 
 Multi-tenant Postgres, org/user/roles, OAuth session management, encrypted

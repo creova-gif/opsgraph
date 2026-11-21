@@ -80,47 +80,51 @@ class SnapshotSource:
         return WorkspaceScanner().load_snapshot(self.snapshot_path)
 
 
+def snapshot_from_data(data: Dict[str, Any]) -> InventorySnapshot:
+    """Rebuild an InventorySnapshot from its asdict() shape — the same dict a
+    recorded `scan` run stores in the runs table."""
+    folders = [
+        WorkspaceFolder(
+            id=f.get("id", ""),
+            name=f.get("name", ""),
+            parent=f.get("parent"),
+            path=f.get("path", ""),
+        )
+        for f in data.get("folders", [])
+    ]
+
+    files = [
+        WorkspaceFile(
+            id=f.get("id", ""),
+            name=f.get("name", ""),
+            mime_type=f.get("mime_type", "application/octet-stream"),
+            parent_id=f.get("parent_id"),
+            path=f.get("path", ""),
+            created_time=f.get("created_time", ""),
+            modified_time=f.get("modified_time", ""),
+            owners=f.get("owners", []),
+            size_bytes=f.get("size_bytes", 0),
+        )
+        for f in data.get("files", [])
+    ]
+
+    metadata = data.get("scan_metadata", {})
+    metadata["total_files"] = len(files)
+    metadata["total_folders"] = len(folders)
+
+    return InventorySnapshot(
+        scan_metadata=metadata,
+        folders=folders,
+        files=files,
+    )
+
+
 class WorkspaceScanner:
     """Scanner capable of indexing local simulated drives or loading existing snapshots."""
 
     def load_snapshot(self, snapshot_path: Path) -> InventorySnapshot:
         with open(snapshot_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        folders = [
-            WorkspaceFolder(
-                id=f.get("id", ""),
-                name=f.get("name", ""),
-                parent=f.get("parent"),
-                path=f.get("path", ""),
-            )
-            for f in data.get("folders", [])
-        ]
-
-        files = [
-            WorkspaceFile(
-                id=f.get("id", ""),
-                name=f.get("name", ""),
-                mime_type=f.get("mime_type", "application/octet-stream"),
-                parent_id=f.get("parent_id"),
-                path=f.get("path", ""),
-                created_time=f.get("created_time", ""),
-                modified_time=f.get("modified_time", ""),
-                owners=f.get("owners", []),
-                size_bytes=f.get("size_bytes", 0),
-            )
-            for f in data.get("files", [])
-        ]
-
-        metadata = data.get("scan_metadata", {})
-        metadata["total_files"] = len(files)
-        metadata["total_folders"] = len(folders)
-
-        return InventorySnapshot(
-            scan_metadata=metadata,
-            folders=folders,
-            files=files,
-        )
+            return snapshot_from_data(json.load(f))
 
     def scan_local_directory(self, root_dir: Path, domain: str = "local") -> InventorySnapshot:
         """Scan a local directory tree simulating a Google Drive."""

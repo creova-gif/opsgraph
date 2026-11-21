@@ -14,6 +14,11 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
 
+from dataclasses import asdict
+from types import SimpleNamespace
+
+import opsgraph_cli
+from inventory.scanner import SnapshotSource, snapshot_from_data
 from store.store import ProfileStore, company_id_for
 
 
@@ -182,6 +187,55 @@ class TestApprovals(unittest.TestCase):
         self.assertEqual(decisions[0]["decision"], "rejected")
         self.assertEqual(decisions[0]["approver"], "Security Lead")
         self.assertEqual(decisions[0]["note"], "needs legal review")
+
+
+class TestStoreBackedInputs(unittest.TestCase):
+    """--company-id commands resolve saved profile + latest recorded scan."""
+
+    def setUp(self):
+        self.temp_dir = Path(tempfile.mkdtemp(prefix="opsgraph_inputs_"))
+        self.db = self.temp_dir / "test.db"
+        self.store = ProfileStore(self.db)
+        self.cid, _ = self.store.save_profile(_valid_profile())
+
+    def tearDown(self):
+        self.store.close()
+        shutil.rmtree(self.temp_dir, ignore_errors=True)
+
+    def _record_scan(self):
+        snapshot = SnapshotSource(BASE_DIR / "examples" / "sample-drive-inventory.json").scan()
+        return self.store.save_run(self.cid, "scan", asdict(snapshot), "files recorded")
+
+    def test_snapshot_from_data_roundtrip(self):
+        snapshot = SnapshotSource(BASE_DIR / "examples" / "sample-drive-inventory.json").scan()
+        rebuilt = snapshot_from_data(asdict(snapshot))
+        self.assertEqual(len(rebuilt.files), len(snapshot.files))
+        self.assertEqual(len(rebuilt.folders), len(snapshot.folders))
+        self.assertEqual(rebuilt.scan_metadata["total_files"], len(snapshot.files))
+        self.assertEqual(rebuilt.files[0].name, snapshot.files[0].name)
+
+    def test_load_profile_snapshot_from_store(self):
+        self._record_scan()
+        args = SimpleNamespace(
+            company_id=self.cid, db=str(self.db), profile=None, inventory=None)
+        profile_data, snapshot = opsgraph_cli._load_profile_snapshot(args)
+        self.assertEqual(profile_data["company"]["legal_name"],
+                         "Acme Cloud Technologies, Inc.")
+        self.assertGreater(len(snapshot.files), 0)
+
+    def test_store_path_errors_exit_cleanly(self):
+        with self.assertRaises(SystemExit):  # unknown company
+            opsgraph_cli._load_profile_snapshot(
+                SimpleNamespace(company_id="ghost-co", db=str(self.db),
+                                profile=None, inventory=None))
+        with self.assertRaises(SystemExit):  # known company, no recorded scan
+            opsgraph_cli._load_profile_snapshot(
+                SimpleNamespace(company_id=self.cid, db=str(self.db),
+                                profile=None, inventory=None))
+        with self.assertRaises(SystemExit):  # neither company nor files
+            opsgraph_cli._load_profile_snapshot(
+                SimpleNamespace(company_id=None, db=str(self.db),
+                                profile=None, inventory=None))
 
 
 if __name__ == "__main__":
