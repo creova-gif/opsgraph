@@ -93,11 +93,13 @@ plan's ordered steps through the unchanged approval gate — plan defines
 scope, the decision ledger still defines permission.
 
 Recorded state is also readable now, not write-only: `gap`, `ask`, `plan`,
-`certificate`, and `dashboard` accept `--company-id` to resolve the saved
-profile + newest recorded `scan` payload straight from the store — record
-once (`profile save` + `scan --record`), query anytime. That makes the
-Phase 1 store a true system of record instead of an audit sink, and it's
-the shape the Phase 5 multi-tenant backend will serve over HTTP.
+`certificate`, `dashboard`, `guardian`, `compile`, `apply`, and `serve`
+all accept `--company-id` to resolve the saved profile + newest recorded
+`scan` payload straight from the store — `apply` even uses the recorded
+scan as its before-state when no snapshot or live credentials are given.
+Record once (`profile save` + `scan --record`), run the whole loop from
+state — scheduled guardian is now a cron line, and the Phase 5 backend
+serves this same read shape over HTTP.
 
 ## Phase 5 — Commercial SaaS
 

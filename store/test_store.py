@@ -4,12 +4,15 @@ Unit tests for the OpsGraph SQLite ProfileStore.
 Covers schema validation, versioned saves, retrieval, listing, and key derivation.
 """
 
+import io
 import json
 import shutil
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE_DIR))
@@ -236,6 +239,17 @@ class TestStoreBackedInputs(unittest.TestCase):
             opsgraph_cli._load_profile_snapshot(
                 SimpleNamespace(company_id=None, db=str(self.db),
                                 profile=None, inventory=None))
+
+    def test_compile_dry_run_from_store(self):
+        # Regression: compiler's format_plan_markdown was shadowed by the
+        # planner's when Mode C shipped — dry-run must use the compile one.
+        self._record_scan()
+        buf = io.StringIO()
+        argv = ["opsgraph", "compile", "--company-id", self.cid,
+                "--db", str(self.db), "--dry-run"]
+        with patch.object(sys, "argv", argv), redirect_stdout(buf):
+            opsgraph_cli.main()
+        self.assertIn("Workspace Compilation Plan", buf.getvalue())
 
 
 if __name__ == "__main__":

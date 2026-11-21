@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 import sys
+import tempfile
 import webbrowser
 from dataclasses import asdict
 from datetime import datetime, timezone
@@ -21,7 +22,7 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(BASE_DIR))
 
-from compiler.compiler import WorkspaceCompiler, format_plan_markdown
+from compiler.compiler import WorkspaceCompiler, format_plan_markdown as format_compile_plan_markdown
 from compiler.drive_apply import (
     GoogleDriveTrasher,
     GoogleDriveWriter,
@@ -70,12 +71,22 @@ def _record_run(args, run_type: str, payload: dict, summary: str,
         store.close()
 
 
-def _load_profile_snapshot(args):
+def _latest_scan_snapshot(store: ProfileStore, company_id: str):
+    """Newest recorded `scan` run's payload rebuilt as an InventorySnapshot,
+    or None when the company has no recorded scan."""
+    scan_runs = store.list_runs(company_id, run_type="scan", limit=1)
+    if not scan_runs:
+        return None
+    return snapshot_from_data(store.get_run(scan_runs[0]["id"])["payload"])
+
+
+def _load_profile_snapshot(args, inventory_required: bool = True):
     """Resolve (profile_data, inventory_snapshot) for read commands.
 
     With --company-id: the saved profile plus the newest recorded `scan` run's
     payload — recorded runs become queryable state instead of write-only.
-    Otherwise: the profile/inventory file paths, as before."""
+    Otherwise: the profile/inventory file paths, as before. Pass
+    inventory_required=False where the engine tolerates no snapshot (compile)."""
     company_id = getattr(args, "company_id", None)
     if company_id:
         db_path = Path(getattr(args, "db", None) or DEFAULT_DB_PATH)
@@ -86,25 +97,25 @@ def _load_profile_snapshot(args):
                 sys.stderr.write(
                     f"Error: no saved profile for '{company_id}' — run `profile save` first\n")
                 sys.exit(1)
-            scan_runs = store.list_runs(company_id, run_type="scan", limit=1)
-            if not scan_runs:
+            snapshot = _latest_scan_snapshot(store, company_id)
+            if snapshot is None and inventory_required:
                 sys.stderr.write(
                     f"Error: no recorded scan for '{company_id}' — run `scan --record` first\n")
                 sys.exit(1)
-            snapshot = snapshot_from_data(store.get_run(scan_runs[0]["id"])["payload"])
         finally:
             store.close()
         return profile_data, snapshot
 
     profile_arg = getattr(args, "profile", None)
     inventory_arg = getattr(args, "inventory", None)
-    if not profile_arg or not inventory_arg:
+    if not profile_arg or (inventory_required and not inventory_arg):
         sys.stderr.write(
             "Error: pass profile + inventory paths, or --company-id to load them from the store\n")
         sys.exit(1)
     with open(profile_arg, "r", encoding="utf-8") as f:
         profile_data = json.load(f)
-    return profile_data, WorkspaceScanner().load_snapshot(Path(inventory_arg))
+    snapshot = WorkspaceScanner().load_snapshot(Path(inventory_arg)) if inventory_arg else None
+    return profile_data, snapshot
 
 
 def cmd_resolve(args):
@@ -264,14 +275,7 @@ def cmd_gap(args):
 
 
 def cmd_compile(args):
-    profile_path = Path(args.profile)
-    with open(profile_path, "r", encoding="utf-8") as f:
-        profile_data = json.load(f)
-
-    inventory_snapshot = None
-    if args.inventory:
-        scanner = WorkspaceScanner()
-        inventory_snapshot = scanner.load_snapshot(Path(args.inventory))
+    profile_data, inventory_snapshot = _load_profile_snapshot(args, inventory_required=False)
 
     compiler = WorkspaceCompiler()
     approved_set = set(args.approve) if args.approve else None
@@ -307,7 +311,7 @@ def cmd_compile(args):
             target_dir=args.target,
             approved_artifact_ids=approved_set,
         )
-        print(format_plan_markdown(plan))
+        print(format_compile_plan_markdown(plan))
         if held_count is not None:
             print(f"   Held for approval : {held_count} artifacts")
     else:
@@ -357,28 +361,49 @@ def cmd_apply(args):
         cmd_reverse(args)
         return
 
-    if not args.profile:
-        sys.stderr.write("Error: apply requires a profile path (or --reverse <run_id>)\n")
+    company_id = getattr(args, "company_id", None)
+    store = None
+    if not args.profile and not company_id:
+        sys.stderr.write("Error: apply requires a profile path or --company-id (or --reverse <run_id>)\n")
         sys.exit(1)
-    profile_path = Path(args.profile)
-    with open(profile_path, "r", encoding="utf-8") as f:
-        profile_data = json.load(f)
-
-    # Before-state inventory: live Drive scan or a provided snapshot.
-    if args.snapshot:
-        snapshot = SnapshotSource(Path(args.snapshot)).scan()
+    if company_id:
+        store = ProfileStore(Path(getattr(args, "db", None) or DEFAULT_DB_PATH))
+        profile_data = store.get_profile(company_id)
+        if profile_data is None:
+            store.close()
+            sys.stderr.write(
+                f"Error: no saved profile for '{company_id}' — run `profile save` first\n")
+            sys.exit(1)
     else:
-        if not args.credentials:
+        with open(args.profile, "r", encoding="utf-8") as f:
+            profile_data = json.load(f)
+
+    # Before-state inventory: explicit snapshot, then live Drive, then the
+    # newest recorded scan when --company-id anchors the run in the store.
+    try:
+        if args.snapshot:
+            snapshot = SnapshotSource(Path(args.snapshot)).scan()
+        elif args.credentials:
+            snapshot = GoogleDriveSource(
+                credentials_path=Path(args.credentials),
+                token_path=Path(args.token) if args.token else None,
+                impersonate=args.impersonate,
+                domain=args.domain,
+            ).scan()
+        elif company_id:
+            snapshot = _latest_scan_snapshot(store, company_id)
+            if snapshot is None:
+                sys.stderr.write(
+                    f"Error: no recorded scan for '{company_id}' — pass --snapshot/--credentials or run `scan --record` first\n")
+                sys.exit(1)
+        else:
             sys.stderr.write(
                 "Error: apply requires --credentials <json> for a live Drive, or --snapshot for an offline diff\n"
             )
             sys.exit(1)
-        snapshot = GoogleDriveSource(
-            credentials_path=Path(args.credentials),
-            token_path=Path(args.token) if args.token else None,
-            impersonate=args.impersonate,
-            domain=args.domain,
-        ).scan()
+    finally:
+        if store is not None:
+            store.close()
 
     compiler = WorkspaceCompiler()
 
@@ -601,12 +626,7 @@ def _consul_client(args) -> ConsulClient:
 
 
 def cmd_guardian(args):
-    profile_path = Path(args.profile)
-    with open(profile_path, "r", encoding="utf-8") as f:
-        profile_data = json.load(f)
-
-    scanner = WorkspaceScanner()
-    inventory_snapshot = scanner.load_snapshot(Path(args.inventory))
+    profile_data, inventory_snapshot = _load_profile_snapshot(args)
 
     register_entries = None
     if args.register:
@@ -875,6 +895,15 @@ def cmd_dashboard(args):
 
 
 def cmd_serve(args):
+    if getattr(args, "company_id", None):
+        profile_data, snapshot = _load_profile_snapshot(args)
+        with tempfile.TemporaryDirectory(prefix="opsgraph_serve_") as tmp:
+            p_path = Path(tmp) / "profile.json"
+            i_path = Path(tmp) / "inventory.json"
+            p_path.write_text(json.dumps(profile_data), encoding="utf-8")
+            i_path.write_text(json.dumps(asdict(snapshot)), encoding="utf-8")
+            serve_dashboard(str(p_path), str(i_path), port=args.port, host=args.host)
+        return
     serve_dashboard(args.profile, args.inventory, port=args.port, host=args.host)
 
 
@@ -940,8 +969,9 @@ def main():
 
     # compile
     p_compile = subparsers.add_parser("compile", help="Compile approved folder taxonomy, Master Register, and templates")
-    p_compile.add_argument("profile", help="Path to company profile JSON")
-    p_compile.add_argument("--inventory", default=None, help="Path to workspace inventory JSON")
+    p_compile.add_argument("profile", nargs="?", help="Path to company profile JSON (omit with --company-id)")
+    p_compile.add_argument("--inventory", default=None, help="Path to workspace inventory JSON (omit with --company-id)")
+    p_compile.add_argument("--company-id", default=None, help="Load saved profile + latest recorded scan from the store")
     p_compile.add_argument("--target", default="./workspace_compiled", help="Target output folder")
     p_compile.add_argument("--dry-run", action="store_true", help="Preview plan without writing")
     p_compile.add_argument("--approve", nargs="+", help="Specific artifact IDs to compile")
@@ -953,7 +983,8 @@ def main():
 
     # apply
     p_apply = subparsers.add_parser("apply", help="Apply an approved compilation plan to a real Google Drive (create-only, audited)")
-    p_apply.add_argument("profile", nargs="?", help="Path to company profile JSON (not needed with --reverse)")
+    p_apply.add_argument("profile", nargs="?", help="Path to company profile JSON (not needed with --reverse or --company-id)")
+    p_apply.add_argument("--company-id", default=None, help="Load saved profile + latest recorded scan (as before-state) from the store")
     p_apply.add_argument("--reverse", type=int, metavar="RUN_ID", help="Reverse a recorded apply run — trash exactly the IDs it created")
     p_apply.add_argument("--from-plan", type=int, metavar="RUN_ID", help="Scope the apply to a recorded plan run's ordered artifact steps")
     p_apply.add_argument("--credentials", help="OAuth client_secret or service_account JSON (Drive write scope)")
@@ -985,8 +1016,9 @@ def main():
 
     # guardian
     p_guardian = subparsers.add_parser("guardian", help="Continuous drift monitoring and weekly Health Digest")
-    p_guardian.add_argument("profile", help="Path to company profile JSON")
-    p_guardian.add_argument("inventory", help="Path to workspace inventory JSON")
+    p_guardian.add_argument("profile", nargs="?", help="Path to company profile JSON (omit with --company-id)")
+    p_guardian.add_argument("inventory", nargs="?", help="Path to workspace inventory JSON (omit with --company-id)")
+    p_guardian.add_argument("--company-id", default=None, help="Load saved profile + latest recorded scan from the store")
     p_guardian.add_argument("--register", default=None, help="Optional Master Register JSON")
     p_guardian.add_argument("--format", choices=["markdown", "json"], default="markdown")
     p_guardian.add_argument("--propose", action="store_true",
@@ -1063,8 +1095,10 @@ def main():
 
     # serve
     p_serve = subparsers.add_parser("serve", help="Launch local preview server for interactive dashboard")
-    p_serve.add_argument("--profile", default="examples/seed-b2b-saas.json", help="Path to company profile JSON")
-    p_serve.add_argument("--inventory", default="examples/sample-drive-inventory.json", help="Path to workspace inventory JSON")
+    p_serve.add_argument("--profile", default="examples/seed-b2b-saas.json", help="Path to company profile JSON (omit with --company-id)")
+    p_serve.add_argument("--inventory", default="examples/sample-drive-inventory.json", help="Path to workspace inventory JSON (omit with --company-id)")
+    p_serve.add_argument("--company-id", default=None, help="Serve from saved profile + latest recorded scan in the store")
+    p_serve.add_argument("--db", default=None, help="SQLite store path (default: .opsgraph/opsgraph.db)")
     p_serve.add_argument("--port", type=int, default=8080, help="Local port to serve on")
     p_serve.add_argument("--host", default="127.0.0.1", help="Host interface")
     p_serve.set_defaults(func=cmd_serve)
