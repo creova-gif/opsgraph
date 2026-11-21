@@ -59,7 +59,7 @@ def run_full_demo():
     print("🔗 Connecting to Google Workspace tenant: acmecloud.io")
     print("   Scopes Requested: [https://www.googleapis.com/auth/drive.metadata.readonly]")
     print("   Action Policy   : Propose-only on existing files; write only to approved roots.")
-    print("   Status          : ✅ Authorized by admin@acmecloud.io")
+    print("   Status          : [AUTHORIZED] admin@acmecloud.io")
 
     # -------------------------------------------------------------
     # Moment 2: Profile
@@ -89,11 +89,11 @@ def run_full_demo():
     resolution = resolver.resolve(profile_data)
     gap_report = analyzer.analyze(resolution, inventory)
 
-    print(f"📊 Baseline Company Infrastructure Score: {gap_report.infrastructure_score}%")
-    print(f"   🟢 Present & Current   : {gap_report.present_current_count}")
-    print(f"   🟡 Present but Stale   : {gap_report.present_stale_count} (overdue review cadence)")
-    print(f"   ⚠️  Duplicate Collisions: {gap_report.duplicate_count} (conflicting draft copies)")
-    print(f"   🔴 Missing Required    : {gap_report.missing_count}")
+    print(f"   Baseline Infrastructure Score: {gap_report.infrastructure_score}%")
+    print(f"   [CURRENT] Present & current  : {gap_report.present_current_count}")
+    print(f"   [STALE] Present but stale  : {gap_report.present_stale_count} (overdue review cadence)")
+    print(f"   [FLAG] Duplicate Collisions: {gap_report.duplicate_count} (conflicting draft copies)")
+    print(f"   [MISSING] Missing required : {gap_report.missing_count}")
     print(f"\n🚨 {len(gap_report.immediate_blockers)} Immediate Deal & Due Diligence Blockers Identified:")
     for b in gap_report.immediate_blockers[:3]:
         print(f"   - [{b.artifact_id}] {b.artifact_name} ({b.root_name}) -> {b.remediation_action}")
@@ -112,7 +112,7 @@ def run_full_demo():
         target_dir=temp_target,
         dry_run=False,
     )
-    print(f"   📁 {len(res.folders_created)} Canonical Folders Created (00_Company_Control through 99_Archive)")
+    print(f"   {len(res.folders_created)} canonical folders created (00_Company_Control through 99_Archive)")
     print(f"   📋 Master Document Register Initialized (31 artifacts tracked with canonical numbering)")
     print(f"   📄 {len(res.artifacts_created)} Governed Templates Stamped with Provenance Headers")
     print(f"   📝 Immutable Audit Log Written: {res.audit_log_path}")
@@ -138,9 +138,9 @@ def run_full_demo():
     digest = guardian.audit(profile_data=profile_data, inventory=inventory)
 
     print(f"🛡️  Guardian Active Scan: 22 drift events caught:")
-    print(f"   🔴 HIGH SEVERITY   : {digest.high_severity_count} (Unowned contractor files, version collisions)")
-    print(f"   🟡 MEDIUM SEVERITY : {digest.medium_severity_count} (Unindexed contracts, stale review dates)")
-    print(f"   ⚪ LOW SEVERITY    : {digest.low_severity_count} (Misplaced files)")
+    print(f"   [HIGH]   : {digest.high_severity_count} (unowned contractor files, version collisions)")
+    print(f"   [MEDIUM] : {digest.medium_severity_count} (unindexed contracts, stale review dates)")
+    print(f"   [LOW]    : {digest.low_severity_count} (misplaced files)")
     print(f"\nTop 1-Click Actionable Remediations:")
     for action in digest.action_queue[:3]:
         print(f"   • [{action['priority']}] {action['task']} -> Assigned to: {action['owner']}")
@@ -149,7 +149,7 @@ def run_full_demo():
     shutil.rmtree(temp_target, ignore_errors=True)
 
     print("\n" + "=" * 80)
-    print(" ✅ DEMO COMPLETE: End-to-end core loop verified in 7 moments.")
+    print(" [COMPLETE] end-to-end core loop verified in 7 moments")
     print("=" * 80 + "\n")
 
 

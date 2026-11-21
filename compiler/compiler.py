@@ -560,7 +560,7 @@ def format_plan_markdown(plan: CompilationPlan) -> str:
         f"",
     ]
     for fld in plan.folders_to_create:
-        lines.append(f"- 📁 `{fld}/`")
+        lines.append(f"- `{fld}/`")
 
     lines.extend([
         f"",
@@ -575,7 +575,7 @@ def format_plan_markdown(plan: CompilationPlan) -> str:
     for a in plan.artifacts_to_compile:
         fw = ", ".join(a["framework_mappings"]) if a["framework_mappings"] else "Internal"
         lines.append(
-            f"| `{a['id']}` | {a['name']} | `{a['root_folder']}` | {a['criticality'].upper()} | {a['resolved_owner']} | {fw} | 🔴 {a['gap_status']} |"
+            f"| `{a['id']}` | {a['name']} | `{a['root_folder']}` | {a['criticality'].upper()} | {a['resolved_owner']} | {fw} | [{a['gap_status']}] |"
         )
 
     if plan.skipped_existing:
@@ -587,7 +587,7 @@ def format_plan_markdown(plan: CompilationPlan) -> str:
             f"",
         ])
         for s in plan.skipped_existing:
-            lines.append(f"- 🟢 {s}")
+            lines.append(f"- [PRESENT] {s}")
 
     return "\n".join(lines)
 

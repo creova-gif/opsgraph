@@ -41,8 +41,8 @@ def serve_dashboard(
     inv = scanner.load_snapshot(i_path)
     gen.generate(profile, inv, output_path=out_html)
 
-    print(f"📊 Dashboard compiled at: {out_html}")
-    print(f"🚀 Launching local server at: http://{host}:{port}/index.html")
+    print(f"dashboard compiled: {out_html}")
+    print(f"serving at http://{host}:{port}/index.html")
 
     class CustomHandler(http.server.SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):

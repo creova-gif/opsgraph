@@ -373,7 +373,7 @@ def cmd_compile(args):
             approved_artifact_ids=approved_set,
             dry_run=False,
         )
-        print(f"✅ Compilation Complete for {result.company_name}!")
+        print(f"Compilation complete for {result.company_name}")
         print(f"   Target Directory : {result.target_directory}")
         print(f"   Folders Created  : {len(result.folders_created)}")
         print(f"   Artifacts Stamped: {len(result.artifacts_created)}")
@@ -939,7 +939,7 @@ def cmd_dashboard(args):
     gen = DashboardGenerator()
     out_path = Path(args.output).resolve()
     gen.generate(profile_data, inventory_snapshot, output_path=out_path)
-    print(f"📊 Interactive Dashboard generated at: {out_path}")
+    print(f"dashboard written: {out_path}")
 
     if args.open:
         webbrowser.open(f"file://{out_path}")

@@ -26,3 +26,6 @@ tmp/
 *.db
 *.db-wal
 *.db-shm
+
+# serve output (generated)
+dashboard/index.html

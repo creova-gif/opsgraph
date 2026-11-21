@@ -754,7 +754,7 @@ def main():
     out_path = Path(args.output).resolve()
     generator.generate(profile_data, inventory_snapshot, output_path=out_path)
 
-    print(f"✅ Interactive Dashboard generated: {out_path}")
+    print(f"dashboard generated: {out_path}")
 
     if args.open:
         import webbrowser

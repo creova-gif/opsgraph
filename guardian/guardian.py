@@ -268,10 +268,10 @@ def format_health_digest_markdown(digest: HealthDigest) -> str:
         f"",
         f"| Severity | Active Events | Impact / Meaning |",
         f"|:---:|:---:|---|",
-        f"| 🔴 **HIGH** | **{digest.high_severity_count}** | Immediate deal/audit risk (unowned files, collisions, critical policy expiry) |",
-        f"| 🟡 **MEDIUM** | **{digest.medium_severity_count}** | Operational drift (unindexed files, standard review overdue) |",
-        f"| ⚪ **LOW** | **{digest.low_severity_count}** | Filing hygiene (misplaced files in backup folders) |",
-        f"| 📊 **TOTAL** | **{digest.total_drift_events}** | Total actionable exceptions flagged |",
+        f"| [HIGH] | **{digest.high_severity_count}** | Immediate deal/audit risk (unowned files, collisions, critical policy expiry) |",
+        f"| [MEDIUM] | **{digest.medium_severity_count}** | Operational drift (unindexed files, standard review overdue) |",
+        f"| [LOW] | **{digest.low_severity_count}** | Filing hygiene (misplaced files in backup folders) |",
+        f"| **TOTAL** | **{digest.total_drift_events}** | Total actionable exceptions flagged |",
         f"",
         f"---",
         f"",
@@ -282,7 +282,7 @@ def format_health_digest_markdown(digest: HealthDigest) -> str:
     ]
 
     for item in digest.action_queue:
-        badge = "🔴 HIGH" if item["priority"] == "HIGH" else ("🟡 MED" if item["priority"] == "MEDIUM" else "⚪ LOW")
+        badge = "[HIGH]" if item["priority"] == "HIGH" else ("[MEDIUM]" if item["priority"] == "MEDIUM" else "[LOW]")
         lines.append(
             f"| {badge} | {item['task']} | `{item['owner']}` | `{item['target']}` |"
         )
@@ -296,7 +296,7 @@ def format_health_digest_markdown(digest: HealthDigest) -> str:
     ])
 
     for ev in digest.events:
-        sev_badge = "🔴 HIGH" if ev.severity == "HIGH" else ("🟡 MEDIUM" if ev.severity == "MEDIUM" else "⚪ LOW")
+        sev_badge = "[HIGH]" if ev.severity == "HIGH" else ("[MEDIUM]" if ev.severity == "MEDIUM" else "[LOW]")
         lines.append(f"### [{ev.event_id}] {ev.title} ({sev_badge})")
         lines.append(f"- **Category:** `{ev.category}`")
         lines.append(f"- **Accountable Owner:** `{ev.assigned_owner}`")

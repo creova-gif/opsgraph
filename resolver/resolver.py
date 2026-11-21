@@ -334,9 +334,9 @@ def format_markdown(report: ResolutionReport) -> str:
         f"",
         f"| Level | Count | Share (%) |",
         f"|---|:---:|:---:|",
-        f"| 🔴 **Required** | **{report.required_count}** | {round(report.required_count / report.total_evaluated * 100, 1)}% |",
-        f"| 🟡 **Recommended** | **{report.recommended_count}** | {round(report.recommended_count / report.total_evaluated * 100, 1)}% |",
-        f"| ⚪ **Optional** | **{report.optional_count}** | {round(report.optional_count / report.total_evaluated * 100, 1)}% |",
+        f"| [REQUIRED] | **{report.required_count}** | {round(report.required_count / report.total_evaluated * 100, 1)}% |",
+        f"| [RECOMMENDED] | **{report.recommended_count}** | {round(report.recommended_count / report.total_evaluated * 100, 1)}% |",
+        f"| [OPTIONAL] | **{report.optional_count}** | {round(report.optional_count / report.total_evaluated * 100, 1)}% |",
         f"| ⛔ **Not Applicable** | **{report.not_applicable_count}** | {round(report.not_applicable_count / report.total_evaluated * 100, 1)}% |",
         f"",
         f"## 2. Critical Path (High Criticality Required Nodes)",
@@ -361,7 +361,7 @@ def format_markdown(report: ResolutionReport) -> str:
         f"",
     ])
     if report.warnings:
-        lines.append("### ⚠️ Resolver Warnings")
+        lines.append("### Resolver Warnings")
         for w in report.warnings:
             lines.append(f"- {w}")
         lines.append("")
@@ -373,7 +373,7 @@ def format_markdown(report: ResolutionReport) -> str:
     ])
 
     for art in report.artifacts:
-        badge = "🔴 Required" if art.level == "required" else ("🟡 Recommended" if art.level == "recommended" else "⚪ Optional")
+        badge = "[REQUIRED]" if art.level == "required" else ("[RECOMMENDED]" if art.level == "recommended" else "[OPTIONAL]")
         frameworks_str = ", ".join(art.framework_mappings) if art.framework_mappings else "Internal"
         lines.append(
             f"| `{art.id}` | {art.name} | {art.root} {art.root_name} | {badge} | {art.criticality.capitalize()} | {art.resolved_owner} | {art.review_cadence_days}d | {frameworks_str} | {art.reason} |"

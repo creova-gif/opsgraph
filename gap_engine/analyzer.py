@@ -268,11 +268,11 @@ def format_gap_markdown(report: GapReport) -> str:
         f"",
         f"| Metric | Count | Description |",
         f"|---|:---:|---|",
-        f"| 🟢 **Present & Current** | **{report.present_current_count}** | Valid, recognized, and within review cadence |",
-        f"| 🟡 **Present but Stale** | **{report.present_stale_count}** | Found in Drive, but exceeded review interval |",
-        f"| 📦 **Misplaced** | **{report.misplaced_count}** | Found, but stored outside canonical folder hierarchy |",
-        f"| ⚠️ **Duplicate Collisions** | **{report.duplicate_count}** | Multiple competing versions detected |",
-        f"| 🔴 **Missing Required** | **{report.missing_count}** | Completely absent from Google Workspace |",
+        f"| [CURRENT] **Present & Current** | **{report.present_current_count}** | Valid, recognized, and within review cadence |",
+        f"| [STALE] **Present but Stale** | **{report.present_stale_count}** | Found in Drive, but exceeded review interval |",
+        f"| [MISPLACED] **Misplaced** | **{report.misplaced_count}** | Found, but stored outside canonical folder hierarchy |",
+        f"| [FLAG] **Duplicate Collisions** | **{report.duplicate_count}** | Multiple competing versions detected |",
+        f"| [MISSING] **Missing Required** | **{report.missing_count}** | Completely absent from Google Workspace |",
         f"",
         f"---",
         f"",
@@ -284,7 +284,7 @@ def format_gap_markdown(report: GapReport) -> str:
 
     for d in report.domain_scores:
         progress_bar = _render_progress_bar(d.percentage)
-        crit_badge = f"🔴 {d.missing_critical} Blocker(s)" if d.missing_critical > 0 else "🟢 Clear"
+        crit_badge = f"[{d.missing_critical} BLOCKERS]" if d.missing_critical > 0 else "[CLEAR]"
         lines.append(
             f"| `{d.root_id}` | {d.name} | {d.earned_points} / {d.total_points} | `{d.percentage}%` {progress_bar} | {crit_badge} |"
         )
@@ -300,7 +300,7 @@ def format_gap_markdown(report: GapReport) -> str:
     ])
 
     for b in report.immediate_blockers:
-        badge = "🔴 MISSING" if b.status == "MISSING" else ("🟡 STALE" if b.status == "PRESENT_STALE" else "⚠️ CONFLICT")
+        badge = "[MISSING]" if b.status == "MISSING" else ("[STALE]" if b.status == "PRESENT_STALE" else "[CONFLICT]")
         fw_str = f" (*Maps to {', '.join(b.framework_mappings)}*)" if b.framework_mappings else ""
         lines.append(f"### {badge}: `{b.artifact_id}` — {b.artifact_name}{fw_str}")
         lines.append(f"- **Domain:** `{b.root} {b.root_name}` | **Assigned Owner:** `{b.resolved_owner}`")
@@ -322,11 +322,11 @@ def format_gap_markdown(report: GapReport) -> str:
 
     for item in report.items:
         status_icon = {
-            "PRESENT_CURRENT": "🟢 Current",
-            "PRESENT_STALE": "🟡 Stale",
-            "MISPLACED": "📦 Misplaced",
-            "DUPLICATE_COLLISION": "⚠️ Duplicate",
-            "MISSING": "🔴 Missing",
+            "PRESENT_CURRENT": "[CURRENT] Current",
+            "PRESENT_STALE": "[STALE] Stale",
+            "MISPLACED": "[MISPLACED] Misplaced",
+            "DUPLICATE_COLLISION": "[DUP] Duplicate",
+            "MISSING": "[MISSING] Missing",
         }.get(item.status, item.status)
 
         observed = item.matched_files[0]["name"] if item.matched_files else "*(None)*"
