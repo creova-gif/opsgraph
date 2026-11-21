@@ -22,8 +22,16 @@ opsgraph = "opsgraph_cli:main"
 
 [tool.setuptools]
 py-modules = ["opsgraph_cli"]
-packages = ["compiler", "dashboard", "demo", "gap_engine", "guardian", "inventory", "resolver"]
+packages = [
+    "certificate", "compiler", "dashboard", "demo", "gap_engine",
+    "guardian", "integrations", "inventory", "plan", "qa", "resolver",
+    "rules", "schema", "store",
+]
 
-# NOTE: rules/, schema/, and examples/ are loaded relative to the source tree,
-# so use `pip install -e .` (editable) for development. Wheel installs will not
-# carry those data directories yet.
+[tool.setuptools.package-data]
+rules = ["*.json"]
+schema = ["*.json"]
+
+# NOTE: examples/ and docs/design/ assets are repo-only. Wheel installs ship
+# rules + schema as package data; _load_tokens falls back to baked CALIBRATION
+# values when tokens.json isn't on disk.
