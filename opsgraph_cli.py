@@ -44,7 +44,9 @@ from inventory.scanner import LocalDirectorySource, SnapshotSource, WorkspaceSca
 from plan.planner import build_plan, format_plan_markdown
 from qa.answerer import CompanyAnswerer
 from resolver.resolver import StateResolver, format_markdown
-from store.store import DEFAULT_DB_PATH, ProfileStore, company_id_for
+from store.store import DEFAULT_DB_PATH, ProfileStore, SCHEMA_PATH, company_id_for
+from store.validate import validate as validate_profile
+from onboarding.profile import build_profile, CUSTOMER_TYPE_CHOICES, MODEL_CHOICES, STAGE_CHOICES, TRIGGER_CHOICES
 
 
 def _record_run(args, run_type: str, payload: dict, summary: str,
@@ -182,6 +184,55 @@ def _write_state_file(state_path: Path, snapshot) -> None:
     state_path.parent.mkdir(parents=True, exist_ok=True)
     with open(state_path, "w", encoding="utf-8") as f:
         json.dump(asdict(snapshot), f, indent=2)
+
+
+def cmd_init(args):
+    """Generate a schema-valid profile from CLI answers (pilot onboarding)."""
+    try:
+        profile_data = build_profile(
+            legal_name=args.name,
+            domain=args.domain,
+            funding_stage=args.stage,
+            employee_count=args.headcount,
+            model=args.model,
+            customer_type=args.customer_type,
+            sector=args.sector,
+            description=args.description,
+            triggers=[t.strip() for t in args.triggers.split(",")] if args.triggers else None,
+            jurisdiction=args.jurisdiction,
+            countries=[c.strip() for c in args.countries.split(",")] if args.countries else None,
+            contractors=args.contractors,
+            currently_raising=args.raising,
+        )
+    except ValueError as e:
+        sys.stderr.write(f"Error: {e}\n")
+        sys.exit(1)
+
+    schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
+    errors = validate_profile(profile_data, schema)
+    if errors:
+        sys.stderr.write("Error: generated profile failed schema validation (builder drift):\n")
+        for e in errors:
+            sys.stderr.write(f"  {e}\n")
+        sys.exit(1)
+
+    out = Path(args.output)
+    out.write_text(json.dumps(profile_data, indent=2) + "\n", encoding="utf-8")
+    company_id = company_id_for(profile_data)
+    print(f"profile written: {out} (company_id: {company_id})")
+
+    if args.save:
+        store = ProfileStore(Path(args.db) if args.db else DEFAULT_DB_PATH)
+        try:
+            cid, version = store.save_profile(profile_data)
+        finally:
+            store.close()
+        print(f"saved '{cid}' as version {version}")
+
+    if args.save:
+        print(f"\nnext: opsgraph scan --snapshot <inventory.json> --company-id {company_id} --record")
+    else:
+        print(f"next: opsgraph profile save {out} && opsgraph scan --snapshot <inventory.json> --company-id {company_id} --record")
 
 
 def cmd_scan(args):
@@ -928,6 +979,26 @@ def main():
     p_resolve.set_defaults(func=cmd_resolve)
 
     # profile
+    # init — generate a schema-valid profile from answers (pilot onboarding)
+    p_init = subparsers.add_parser("init", help="Generate a company profile from answers (schema-valid)")
+    p_init.add_argument("--name", required=True, help="Legal company name")
+    p_init.add_argument("--domain", required=True, help="Workspace domain (e.g. acmecloud.io)")
+    p_init.add_argument("--stage", required=True, choices=STAGE_CHOICES, help="Funding stage")
+    p_init.add_argument("--headcount", required=True, type=int, help="Employee count")
+    p_init.add_argument("--model", default="b2b_saas", choices=MODEL_CHOICES)
+    p_init.add_argument("--customer-type", default="enterprise", choices=CUSTOMER_TYPE_CHOICES)
+    p_init.add_argument("--sector", default=None, help="Sector (defaulted answers are recorded in provenance.unanswered)")
+    p_init.add_argument("--description", default=None, help="One-line business description")
+    p_init.add_argument("--triggers", default=None, help=f"Comma-separated commercial triggers; default {','.join(['enterprise_sales','security_questionnaires'])}. Choices: {','.join(TRIGGER_CHOICES)}")
+    p_init.add_argument("--jurisdiction", default="Delaware", help="Incorporation jurisdiction")
+    p_init.add_argument("--countries", default=None, help="Comma-separated operating countries (default US)")
+    p_init.add_argument("--contractors", type=int, default=0)
+    p_init.add_argument("--raising", action="store_true", help="Currently raising")
+    p_init.add_argument("--output", default="profile.json", help="Output profile path (default profile.json)")
+    p_init.add_argument("--save", action="store_true", help="Also persist to the store")
+    p_init.add_argument("--db", default=None, help=f"SQLite DB path (default: {DEFAULT_DB_PATH})")
+    p_init.set_defaults(func=cmd_init)
+
     p_profile = subparsers.add_parser("profile", help="Persist and retrieve versioned company profiles (SQLite store)")
     profile_sub = p_profile.add_subparsers(dest="profile_action", required=True)
     p_profile_save = profile_sub.add_parser("save", help="Validate + persist a profile JSON as a new version")

@@ -24,7 +24,7 @@ opsgraph = "opsgraph_cli:main"
 py-modules = ["opsgraph_cli"]
 packages = [
     "certificate", "compiler", "dashboard", "demo", "gap_engine",
-    "guardian", "integrations", "inventory", "plan", "qa", "resolver",
+    "guardian", "integrations", "inventory", "onboarding", "plan", "qa", "resolver",
     "rules", "schema", "store",
 ]
 

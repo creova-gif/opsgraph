@@ -9,6 +9,17 @@ urgent trigger (enterprise deal, fundraise, security/SOC 2 request, rapid hiring
 
 Core loop: `Company Profile -> Required State -> Workspace Inventory -> Gap Report -> Compile (approved) -> Guardian`
 
+First number in four commands (works fully offline):
+
+```bash
+opsgraph init --name "Acme Cloud Technologies, Inc." --domain acmecloud.io \
+  --stage seed --headcount 14 --output profile.json --save
+opsgraph scan --snapshot examples/sample-drive-inventory.json \
+  --company-id acmecloud-io --record
+opsgraph dashboard --company-id acmecloud-io --output dashboard.html
+opsgraph status acmecloud-io
+```
+
 ## Layout
 - `evidence-room/` - YC application preparation evidence room (answers, metrics, demo, interviews)
 - `resolver/` - deterministic state resolver engine (Python) + test suite
@@ -44,6 +55,7 @@ dump templates - never claim compliance. Delete is never allowed in v1.
 - [x] **Remediation Plan (deterministic floor):** `plan` orders every actionable gap into P0 critical-path → P1–P3 phases in resolver dependency order, with blocked-by annotations (`plan/`)
 - [x] **Readiness Certificate:** `certificate` renders the CALIBRATION-series cert from real engine output — score, ruleset version, flag counts, approver chain; certifies a measurement, not compliance (`certificate/`)
 - [x] **Plan-driven Apply (Mode D floor):** `apply --from-plan <run_id>` scopes a Drive apply to a recorded plan's ordered steps — the approval ledger gate stays fully intact
+- [x] **Profile Onboarding:** `init` generates a schema-valid company profile from answers (`--name --domain --stage --headcount` + optional fields); unanswered answers land in `provenance.unanswered`, governance approval defaults on (`onboarding/`)
 - [x] **Store-backed Inputs:** every read/execute command — `gap`, `ask`, `plan`, `certificate`, `dashboard`, `guardian`, `compile`, `apply`, `serve` — accepts `--company-id` to resolve the saved profile + latest recorded scan from the store; record once (`profile save` + `scan --record`), run the whole loop from state
 - [x] **Pilot Offer Kit:** 48-Hour offer one-pager, delivery checklist, intake form (`docs/pilot/`)
 - [x] **Evidence Room:** 9-folder structure + draft YC application answers (`evidence-room/`)
