@@ -1,5 +1,10 @@
 # OpsGraph
 
+[![CI](https://github.com/creova-gif/opsgraph/actions/workflows/ci.yml/badge.svg)](https://github.com/creova-gif/opsgraph/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+![Version](https://img.shields.io/badge/version-0.2.0-informational)
+![Python](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue)
+
 Turns a startup's existing Google Workspace into an AI-maintained company operating system.
 Required state (what should exist) is compared with observed state (what exists), approved gaps are
 compiled into the workspace, and a Guardian monitors drift.
@@ -8,6 +13,21 @@ compiled into the workspace, and a Guardian monitors drift.
 urgent trigger (enterprise deal, fundraise, security/SOC 2 request, rapid hiring). Concierge first.
 
 Core loop: `Company Profile -> Required State -> Workspace Inventory -> Gap Report -> Compile (approved) -> Guardian`
+
+## Install
+
+Requires Python 3.10 or newer. The core engine has no runtime dependencies; the Google Drive
+scanner is an optional extra.
+
+```bash
+git clone https://github.com/creova-gif/opsgraph.git
+cd opsgraph
+python -m venv .venv && source .venv/bin/activate
+pip install -e .            # core CLI (works fully offline)
+pip install -e ".[drive]"   # optional: real Google Drive scanning
+```
+
+## Quick start
 
 First number in four commands (works fully offline):
 
@@ -59,3 +79,26 @@ dump templates - never claim compliance. Delete is never allowed in v1.
 - [x] **Store-backed Inputs:** every read/execute command — `gap`, `ask`, `plan`, `certificate`, `dashboard`, `guardian`, `compile`, `apply`, `serve` — accepts `--company-id` to resolve the saved profile + latest recorded scan from the store; record once (`profile save` + `scan --record`), run the whole loop from state
 - [x] **Pilot Offer Kit:** 48-Hour offer one-pager, delivery checklist, intake form (`docs/pilot/`)
 - [x] **Evidence Room:** 9-folder structure + draft YC application answers (`evidence-room/`)
+
+## Testing
+
+```bash
+python -m unittest discover -s . -p 'test_*.py'
+```
+
+CI runs the same suite on Python 3.10, 3.12 and 3.14, plus a syntax check and a gap-report smoke test
+on the bundled fixtures.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Everyone taking part is expected to follow the
+[Code of Conduct](CODE_OF_CONDUCT.md).
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).
+
+## Support
+
+Open an issue on [GitHub](https://github.com/creova-gif/opsgraph/issues) or email
+creativeinnovationspace@gmail.com.
