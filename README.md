@@ -3,6 +3,12 @@
 [![CI](https://github.com/creova-gif/opsgraph/actions/workflows/ci.yml/badge.svg)](https://github.com/creova-gif/opsgraph/actions/workflows/ci.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
+![Python](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=white)
+![SQLite WAL](https://img.shields.io/badge/SQLite_WAL-003B57?logo=sqlite&logoColor=white)
+![Google Workspace](https://img.shields.io/badge/Google_Workspace-4285F4?logo=google&logoColor=white)
+![OAuth 2.0](https://img.shields.io/badge/OAuth_2.0-EB5424?logo=auth0&logoColor=white)
+![unittest](https://img.shields.io/badge/unittest-3776AB?logo=python&logoColor=white)
+
 **Deterministic Google Workspace governance compiler with split least-privilege OAuth scopes, a local SQLite WAL human-approval ledger, create-only execution, and explicit deterministic vs. simulation provenance.**
 
 OpsGraph models a startup's operational infrastructure as an auditable **Operating Graph**: given a structured company profile (`schema/company-profile.schema.json`), it resolves which operational artifacts must exist (`rules/core-artifacts.json`), inventories observed workspace metadata without reading document contents (`drive.metadata.readonly`), scores readiness gaps, gates remediation behind an append-only SQLite approval ledger, compiles canonical folder taxonomies and document stubs via create-only operations (`drive.file`), and monitors continuous operational drift.
