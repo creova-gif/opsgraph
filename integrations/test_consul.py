@@ -183,6 +183,15 @@ class TestHTTPConsulClient(unittest.TestCase):
             with self.assertRaises(ConsulUnavailable):
                 client.run_agent("guardian-remediation", {}, "acme", "k1")
 
+    def test_non_boolean_simulation_field_is_rejected(self):
+        client = HTTPConsulClient("http://x", "tok")
+        for bad_value in (None, 0, 1, "", "false", []):
+            payload = {"run_id": "r1", "status": "completed", "output": {},
+                       "provider": "gemini-2.0-flash", "simulation": bad_value}
+            with patch("urllib.request.urlopen", return_value=_FakeResponse(payload)):
+                with self.assertRaises(ConsulUnavailable, msg=f"accepted {bad_value!r}"):
+                    client.run_agent("guardian-remediation", {}, "acme", "k1")
+
     def test_core_version_header_captured(self):
         payload = {"run_id": "r1", "status": "completed", "output": {},
                    "provider": "p", "simulation": False}

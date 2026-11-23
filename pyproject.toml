@@ -5,10 +5,47 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "opsgraph"
 version = "0.2.0"
-description = "Turns a startup's existing Google Workspace into an AI-maintained company operating system."
+description = "Governed Google Workspace operating-graph engine with least-privilege OAuth scopes, SQLite WAL approval ledgers, create-only compilation, and deterministic vs. simulation provenance."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "Apache-2.0" }
+authors = [
+    { name = "Justin Mafie" },
+]
+keywords = [
+    "governance",
+    "google-workspace",
+    "google-drive",
+    "operations",
+    "compliance-readiness",
+    "sqlite",
+    "deterministic",
+    "cli",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Office/Business",
+    "Topic :: Security",
+    "Topic :: Software Development :: Compilers",
+]
+
+[project.urls]
+Homepage = "https://github.com/creova-gif/opsgraph"
+Repository = "https://github.com/creova-gif/opsgraph"
+Issues = "https://github.com/creova-gif/opsgraph/issues"
+Changelog = "https://github.com/creova-gif/opsgraph/blob/main/CHANGELOG.md"
+Security = "https://github.com/creova-gif/opsgraph/blob/main/SECURITY.md"
 
 [project.optional-dependencies]
 drive = [
