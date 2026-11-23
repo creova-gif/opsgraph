@@ -8,15 +8,22 @@ __pycache__/
 *$py.class
 *.egg-info/
 .pytest_cache/
+.ruff_cache/
 dist/
 build/
 
-# Environments & secrets
+# Environments, credentials & secrets
 .env
 .env.*
 !.env.example
 .venv/
 venv/
+*.pem
+*.key
+*.p12
+client_secret*.json
+service_account*.json
+token.json
 
 # Node / Bun
 node_modules/
@@ -29,14 +36,19 @@ workspace_demo/
 tmp/
 *.log
 
-# Agent & internal strategy scratch
+# AI agent & platform export clutter
 .claude/skills/gstack/
+.agents/
+.cursor/
+gstack/
 .gstack/
 .devin/
+attached_assets/
+mockup-sandbox/
 evidence-room/
 docs/strategy/*.docx
 
-# Local opsgraph state
+# Local opsgraph SQLite WAL state
 .opsgraph/
 *.db
 *.db-wal

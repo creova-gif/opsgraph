@@ -2,41 +2,69 @@
 
 ## Supported Versions
 
-| Version | Supported |
-| :--- | :---: |
-| `0.2.x` | :white_check_mark: |
-| `0.1.x` | :white_check_mark: |
+| Version | Supported | Python Runtime |
+| :--- | :---: | :--- |
+| `0.2.x` | Yes | Python `3.10` – `3.14` |
+| `0.1.x` | Security fixes only | Python `3.10` – `3.14` |
 
 ## Reporting a Vulnerability
 
-Please report security vulnerabilities privately by emailing **creativeinnovationspace@gmail.com** rather than opening a public GitHub issue.
+Please report suspected security vulnerabilities privately by emailing **creativeinnovationspace@gmail.com** rather than opening a public GitHub issue or pull request.
 
-Include:
-1. A description of the vulnerability and the affected component (`inventory/`, `compiler/`, `store/`, `guardian/`, or `integrations/`).
-2. Minimal steps or a fixture-based command to reproduce the issue.
-3. Any potential impact on workspace integrity or data exposure.
+Include in your report:
+1. **Affected subsystem:** (`inventory/`, `compiler/`, `store/`, `guardian/`, `qa/`, `certificate/`, `dashboard/`, or `integrations/`).
+2. **Reproduction steps:** Minimal CLI command or fixture payload demonstrating the boundary violation.
+3. **Impact assessment:** Potential impact on Google Workspace object integrity, approval-ledger bypass, credential handling, or provenance spoofing.
 
-We aim to acknowledge reports within **48 hours** and provide a remediation plan or patch within **7 days**.
+**Response Targets:**
+- **Acknowledgement:** Within **48 hours** of receipt.
+- **Triage & Remediation Plan:** Within **7 calendar days**, with coordinated disclosure once a verified fix lands on `main`.
 
 ---
 
-## Security & Trust Boundaries
+## Security Architecture & Trust Boundaries
 
-OpsGraph is engineered with explicit, verifiable safety boundaries for operating against company shared drives and repositories:
+OpsGraph operates adjacent to sensitive company shared drives (legal agreements, board governance, HR policies, security evidence). Its architecture enforces four structural safety boundaries in code rather than relying on prompt instructions:
 
-### 1. Read-Only Metadata Scanning (`drive.metadata.readonly`)
-- The Google Drive scanner (`inventory/drive_source.py`) requests only the **`https://www.googleapis.com/auth/drive.metadata.readonly`** OAuth scope by default.
-- During inventory and gap analysis (`opsgraph scan`, `opsgraph gap`, `opsgraph guardian`), OpsGraph inspects file names, folder hierarchy, MIME types, modification timestamps, and ownership metadata — it **never downloads raw document contents** during inventory scans and never sends document bodies to external LLM providers.
+### 1. Split Least-Privilege Google OAuth Scopes (`drive.metadata.readonly` vs. `drive.file`)
 
-### 2. Non-Destructive v1 Compiler Guarantee (No `delete`, `move`, or `overwrite`)
-- The workspace compiler and Drive write adapter (`compiler/compiler.py`, `compiler/drive_apply.py`) are **create-only** by protocol construction.
-- `DriveWriteBackend` exposes only two operations: `create_folder` and `create_file`. There are **no** `delete`, `trash`, `update`, `move`, or `rename` methods in the v1 write surface.
-- Existing files or folders matching canonical targets are recorded as `skip` entries in the audit log and are never overwritten or modified.
-- Every executed `opsgraph apply --record` persists a complete, deterministic reversal manifest (`new_id` values for all created objects) in the SQLite store (`docs/engineering/APPLY_REVERSIBILITY.md`).
+OpsGraph **never** requests the monolithic `https://www.googleapis.com/auth/drive` read/write scope. Read discovery and write compilation are isolated across distinct adapters and OAuth scopes:
 
-### 3. Append-Only Approval Ledger Gate
-- When `governance.require_compile_approval` is enabled on a company profile (default for `opsgraph init`) or `--require-approval` is passed, `opsgraph compile` and `opsgraph apply` refuse to materialize any artifact that does not have an explicit `approved` entry in the local SQLite approval ledger (`store/store.py`).
+| Adapter | Module | OAuth Scope | Permitted Operations | Structurally Prohibited |
+| :--- | :--- | :--- | :--- | :--- |
+| **Inventory Scanner** | `inventory/drive_source.py` (`GoogleDriveSource`) | `https://www.googleapis.com/auth/drive.metadata.readonly` | List file/folder IDs, names, parent links, MIME types, timestamps, sizes, owner emails, and `changes.list` delta tokens | Downloading file bodies/content; creating, editing, moving, or deleting any Drive object |
+| **Create-Only Writer** | `compiler/drive_apply.py` (`GoogleDriveWriter` / `DriveWriteBackend`) | `https://www.googleapis.com/auth/drive.file` | `create_folder` and `create_file` only; skips any canonical target that already exists (`action: "skip"`) | Reading, overwriting, renaming, moving, or deleting pre-existing customer files |
+| **Scoped Reversal Adapter** | `compiler/drive_apply.py` (`GoogleDriveTrasher` / `DriveTrashBackend`) | `https://www.googleapis.com/auth/drive.file` | Trashes (`trashed=True`) only the exact `new_id` entries recorded in a prior `apply --record` manifest, gated by `--reverse <run_id> --execute --approver <name>` | Permanent `files.delete`; touching any Drive object not created by OpsGraph itself |
 
-### 4. Local-First SQLite WAL State & Credential Hygiene
-- Operational state (profiles, scan snapshots, gap runs, approval ledgers) is stored locally in SQLite with Write-Ahead Logging (`PRAGMA journal_mode=WAL`) and foreign-key enforcement (`PRAGMA foreign_keys=ON`).
-- OAuth client secrets, service account JSON keys, and `OPSGRAPH_CONSUL_TOKEN` bearer tokens are read strictly from runtime paths or environment variables and must never be committed to version control.
+Because `drive.file` scopes access strictly to files and folders created by the authorized client application, pre-existing customer documents remain unreachable to both `GoogleDriveWriter` and `GoogleDriveTrasher` at the Google API layer.
+
+### 2. Local SQLite WAL Persistence & Human-Approval Ledger (`store/store.py`)
+
+- **Local-First State:** Operational state lives in a local SQLite database (`.opsgraph/opsgraph.db` by default, configurable via `--db`) initialized with Write-Ahead Logging (`PRAGMA journal_mode=WAL`) and relational integrity (`PRAGMA foreign_keys=ON`).
+- **Immutable Profile & Run Lineage:** Company profiles are validated against `schema/company-profile.schema.json` before insertion into `profile_versions` (each save increments `version` rather than mutating prior records). Engine executions (`scan`, `resolve`, `gap`, `plan`, `compile`, `apply`, `reverse`, `guardian`, `ask`) append immutable audit rows to `runs`.
+- **Append-Only Approval Gate:** Human review decisions (`approved` or `rejected`) are recorded in the append-only `approvals` table with `approver`, UTC `created_at` timestamp, and optional `note`. Profiles initialized via `opsgraph init` enable `governance.require_compile_approval = true` by default; `opsgraph compile --require-approval` and `opsgraph apply` refuse to materialize any artifact lacking an effective `approved` ledger state.
+
+### 3. Deterministic vs. Simulation Provenance Boundaries (`qa/`, `integrations/`, `certificate/`)
+
+OpsGraph enforces strict epistemic provenance so simulated or rule-based outputs can never masquerade as live model inference or formal audit certification:
+
+- **Deterministic Q&A Provenance (`qa/answerer.py`):** Every `Answer` emitted by `opsgraph ask` sets `source = "deterministic"`, attaches explicit engine citations (`artifact_id`, `domain:...`, or `event:...`), and degrades to `confidence = "low"` when a question falls outside structured engine state.
+- **Mandatory `simulation` Wire Contract (`integrations/consul.py`):** When `opsgraph guardian --propose --consul-url <url>` calls a `consul-core` v1 endpoint (`POST /v1/agent-runs`), `HTTPConsulClient` sends structured metadata events (never raw document bodies) authenticated via `Authorization: Bearer $OPSGRAPH_CONSUL_TOKEN`. If the HTTP response omits the boolean `simulation` field, `HTTPConsulClient` raises `ConsulUnavailable` rather than accepting unverified output. When no server is configured or reachable, `StubConsulClient` returns deterministic remediation templates explicitly tagged with `simulation=True` and `provider="simulation"`, rendered as `[simulation]` in CLI output. Neither client can mutate the workspace or bypass the approval ledger.
+- **Measurement-Only Certificate (`certificate/generator.py`):** Generated readiness certificates include a verbatim attestation stating that OpsGraph certifies an empirical point-in-time measurement against `rules/core-artifacts.json` — never legal or regulatory compliance (SOC 2, ISO 27001, HIPAA, GDPR).
+
+### 4. Credential Hygiene & Local Preview Server
+
+- **Secrets Never Stored in SQLite or Git:** Google OAuth `client_secret.json`, cached `token.json`, Service Account keys, and `OPSGRAPH_CONSUL_TOKEN` are read at runtime from local paths or environment variables (`.env.example`) and are excluded via `.gitignore`.
+- **Loopback-Only Preview Binding:** `opsgraph serve` binds to `127.0.0.1` by default so interactive readiness dashboards are not exposed on shared network interfaces unless `--host` is explicitly overridden.
+
+---
+
+## Vulnerability Scope
+
+| In Scope | Out of Scope |
+| :--- | :--- |
+| Bypass of `--require-approval` / `governance.require_compile_approval` gates in `compiler` or `apply` | Social engineering or physical access to an operator's local workstation |
+| Unintended mutation, overwrite, or deletion of pre-existing workspace files | Misconfigured Google Cloud IAM / domain-wide delegation outside OpsGraph's documented scopes |
+| Path traversal or arbitrary file write in `compiler`, `dashboard`, `certificate`, or `inventory` | Denial-of-service from intentionally malformed multi-gigabyte local JSON fixtures passed by a local CLI user |
+| Missing/spoofed `simulation` or `source="deterministic"` provenance flags | Third-party vulnerabilities in upstream Google Cloud Python SDKs (report upstream; we track via Dependabot) |
+| XSS / HTML injection via untrusted Drive file metadata rendered in `dashboard/` or `certificate/` | — |

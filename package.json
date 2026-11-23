@@ -1,7 +1,12 @@
 {
   "name": "opsgraph",
   "version": "0.2.0",
-  "description": "Turns a startup's existing Google Workspace into an AI-maintained company operating system.",
+  "description": "Governed Google Workspace operating-graph engine with least-privilege OAuth scopes, SQLite WAL approval ledgers, and deterministic vs. simulation provenance.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/creova-gif/opsgraph.git"
+  },
   "scripts": {
     "resolve": "python3 resolver/resolver.py",
     "inventory": "python3 inventory/scanner.py",

@@ -22,11 +22,32 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Syntax check
-        run: python -m compileall -q compiler dashboard demo gap_engine guardian inventory resolver opsgraph_cli.py
+      - name: Syntax check across all packages
+        run: python -m compileall -q certificate compiler dashboard demo gap_engine guardian integrations inventory onboarding plan qa resolver rules schema store opsgraph_cli.py
 
-      - name: Unit tests
+      - name: Unit and integration test suites (16 suites)
         run: python -m unittest discover -s . -p 'test_*.py'
 
-      - name: Smoke — gap report on fixtures
-        run: python opsgraph_cli.py gap examples/seed-b2b-saas.json examples/sample-drive-inventory.json --format json > /tmp/gap.json && python -c "import json; r=json.load(open('/tmp/gap.json')); assert 0 <= r['infrastructure_score'] <= 100; print('score:', r['infrastructure_score'])"
+      - name: Smoke — stateless gap report on fixtures
+        run: |
+          python opsgraph_cli.py gap examples/seed-b2b-saas.json examples/sample-drive-inventory.json --format json > /tmp/gap.json
+          python -c "import json; r=json.load(open('/tmp/gap.json')); assert 0 <= r['infrastructure_score'] <= 100; print('score:', r['infrastructure_score'])"
+
+      - name: Package install and stateful SQLite WAL loop smoke test
+        run: |
+          REPO_ROOT="$PWD"
+          SMOKE_DIR="$(mktemp -d)"
+          python -m pip install --quiet .
+          cd "$SMOKE_DIR"
+          opsgraph init --name "Acme Cloud Technologies, Inc." --domain acmecloud.io --stage seed --headcount 14 --output profile.json --save
+          opsgraph scan --snapshot "$REPO_ROOT/examples/sample-drive-inventory.json" --company-id acmecloud-io --record
+          opsgraph gap --company-id acmecloud-io --format json --record > gap.json
+          opsgraph plan --company-id acmecloud-io --record > plan.md
+          opsgraph ask "what is our readiness score?" --company-id acmecloud-io --format json > ask.json
+          python -c "import json; a=json.load(open('ask.json')); assert a['source'] == 'deterministic' and a['confidence'] == 'high'"
+          opsgraph approve acmecloud-io '*' --approver "CI Gate"
+          opsgraph compile --company-id acmecloud-io --require-approval --target ./compiled --record
+          opsgraph guardian --company-id acmecloud-io --propose --record > guardian.md
+          opsgraph dashboard --company-id acmecloud-io --output dashboard.html
+          opsgraph certificate --company-id acmecloud-io --approver "CI Gate" --output certificate.html
+          opsgraph status acmecloud-io
