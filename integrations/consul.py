@@ -62,10 +62,11 @@ class HTTPConsulClient(ConsulClient):
                 core_version = resp.headers.get("X-Consul-Core-Version", "")
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as e:
             raise ConsulUnavailable(str(e)) from e
-        # `simulation` is contract-required: a missing flag would let canned
-        # output pass as real model work. Treat absence as a bad response.
-        if "simulation" not in data:
-            raise ConsulUnavailable("consul-core v1 response missing required field: simulation")
+        # `simulation` is contract-required as a strict boolean: a missing or
+        # non-boolean value (e.g. null, 0, "") could let canned output pass as
+        # real model work via truthiness checks.
+        if not isinstance(data.get("simulation"), bool):
+            raise ConsulUnavailable("consul-core v1 response requires boolean field: simulation")
         return AgentRunResult(
             run_id=data.get("run_id", ""),
             status=data.get("status", ""),

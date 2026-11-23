@@ -18,12 +18,15 @@ build/
 !.env.example
 .venv/
 venv/
+.secrets/
 *.pem
 *.key
 *.p12
 client_secret*.json
 service_account*.json
 token.json
+token_*.json
+oauth_token_cache*.json
 
 # Node / Bun
 node_modules/

@@ -134,9 +134,9 @@ Most workspace integrations request `https://www.googleapis.com/auth/drive`, gra
 | Dimension | Monolithic `drive` Scope (Rejected) | OpsGraph Split-Scope Architecture (Chosen) |
 | :--- | :--- | :--- |
 | **Discovery (`opsgraph scan`)** | Can download confidential contract/board PDF bodies | Uses `drive.metadata.readonly` (`inventory/drive_source.py`); inspects metadata fields only |
-| **Execution (`opsgraph apply`)** | Can overwrite, move, or delete pre-existing customer files | Uses `drive.file` (`GoogleDriveWriter`); Google's API restricts access strictly to objects OpsGraph created |
-| **Protocol Surface (`DriveWriteBackend`)** | Bidirectional CRUD reconciler | Exposes **only** `create_folder` and `create_file` (`compiler/drive_apply.py`); existing canonical paths emit `action: "skip"` |
-| **Reversal (`opsgraph apply --reverse`)** | Requires heuristic state snapshots or backup restores | Separate `DriveTrashBackend` (`GoogleDriveTrasher`) trashes only the exact `new_id` entries recorded in `runs.payload.audit_log`, still within `drive.file` |
+| **OAuth Write Scope (`opsgraph apply`)** | Blanket read/write/delete across every file in the workspace | Uses per-file `drive.file` scope (limiting Google API visibility to app-created objects or files explicitly shared with the OAuth client) |
+| **Protocol Surface (`DriveWriteBackend`)** | Bidirectional CRUD reconciler | `GoogleDriveWriter` exposes **only** `create_folder` and `create_file` (`compiler/drive_apply.py`); existing canonical paths emit `action: "skip"` |
+| **Reversal (`opsgraph apply --reverse`)** | Heuristic state snapshots or broad deletion | Isolated `DriveTrashBackend` (`GoogleDriveTrasher`) trashes only the enumerated `new_id` entries recorded in `runs.payload.audit_log` |
 
 **Trade-off:** OpsGraph v1 will not automatically move or delete misplaced legacy files in a messy Drive; instead, `gap_engine/` and `guardian/` surface misplaced or duplicate files as structured remediation items for human action.
 
@@ -275,10 +275,10 @@ CI (`.github/workflows/ci.yml`) runs these checks plus an isolated `/tmp` wheel 
 ### Live Google Drive Discovery (`drive.metadata.readonly`)
 
 ```bash
-# Full initial metadata scan + incremental token checkpoint
+# Full initial metadata scan + incremental snapshot checkpoint (.secrets/ is gitignored)
 opsgraph scan --drive \
-  --credentials /secure/creds/oauth_client_secret.json \
-  --token /secure/creds/token_readonly.json \
+  --credentials .secrets/oauth_client_secret.json \
+  --token .secrets/token_readonly.json \
   --state .opsgraph/drive_changes_state.json \
   --domain acmecloud.io \
   --company-id acmecloud-io \
@@ -291,18 +291,23 @@ opsgraph scan --drive \
 # 1. Dry-run diff against recorded snapshot (default — writes nothing to Drive)
 opsgraph apply --company-id acmecloud-io
 
-# 2. Execute approved plan Steps from a recorded `plan` run (#3)
+# 2. Execute approved plan steps using the persisted snapshot (keeps discovery out
+#    of the write-token path; if a token cache ever captured read-only scopes, delete
+#    it or point --token at a fresh path before re-authenticating)
 opsgraph apply --company-id acmecloud-io --from-plan 3 \
-  --credentials /secure/creds/oauth_client_secret.json \
-  --token /secure/creds/token_drive_file.json \
+  --snapshot .opsgraph/drive_changes_state.json \
+  --credentials .secrets/oauth_client_secret.json \
+  --token .secrets/token_drive_file.json \
   --approver "Jane Doe" \
   --execute --record
 
-# 3. Inspect recorded `new_id` write manifest or reverse a specific apply run (#5)
-opsgraph history --run-id 5
-opsgraph apply --reverse 5 \
-  --credentials /secure/creds/oauth_client_secret.json \
-  --token /secure/creds/token_drive_file.json \
+# 3. Look up the recorded `apply` run ID (e.g. #6), inspect its `new_id` manifest,
+#    or reverse that apply run
+opsgraph history --company-id acmecloud-io --type apply
+opsgraph history --run-id 6
+opsgraph apply --reverse 6 \
+  --credentials .secrets/oauth_client_secret.json \
+  --token .secrets/token_drive_file.json \
   --approver "Jane Doe" \
   --execute --record
 ```
@@ -345,7 +350,7 @@ print(f"{gap_report.company_name}: {gap_report.infrastructure_score}% ({len(gap_
 ## Security & Privacy Posture
 
 - **No Raw Content Ingestion:** Inventory scans inspect Drive object metadata only; document bodies are never downloaded or sent to external LLM APIs.
-- **Create-Only Compiler Surface:** `DriveWriteBackend` structurally omits `delete`, `move`, `rename`, and `update`. Reversal is isolated in `DriveTrashBackend` (`apply --reverse`) and restricted by `drive.file` to objects created by OpsGraph.
+- **Create-Only Compiler & Manifest Reversal:** `GoogleDriveWriter` (`DriveWriteBackend`) structurally omits `delete`, `move`, `rename`, and `update` while pairing with the per-file `drive.file` OAuth scope (avoiding blanket workspace access). Reversal is isolated in `GoogleDriveTrasher` (`DriveTrashBackend` via `apply --reverse`) and restricted in code to the enumerated `new_id` entries recorded in the `apply` run manifest.
 - **Least-Privilege CI & Dependency Hygiene:** GitHub Actions workflows run with `permissions: contents: read`, and `.github/dependabot.yml` monitors `pip` and `github-actions` weekly.
 - **Vulnerability Disclosure:** Report security issues privately to **creativeinnovationspace@gmail.com** per [SECURITY.md](SECURITY.md).
 
