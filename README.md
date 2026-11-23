@@ -5,19 +5,61 @@
 ![Version](https://img.shields.io/badge/version-0.2.0-informational)
 ![Python](https://img.shields.io/badge/python-3.10%E2%80%933.14-blue)
 
-Turns a startup's existing Google Workspace into an AI-maintained company operating system.
-Required state (what should exist) is compared with observed state (what exists), approved gaps are
-compiled into the workspace, and a Guardian monitors drift.
+Deterministic operational graph and governance compiler that turns a startup's existing Google Workspace or repository tree into an auditable company operating system. Required state (what should exist) is resolved from a company profile, compared against observed workspace metadata, and compiled into non-destructive remediation plans with SQLite WAL auditability and continuous drift monitoring.
 
-**v1 scope:** Seed to Series A B2B tech startups (5-50 people) on Google Workspace, sold against an
-urgent trigger (enterprise deal, fundraise, security/SOC 2 request, rapid hiring). Concierge first.
+**v1 scope:** Seed to Series A B2B tech startups (5–50 people) on Google Workspace, built for urgent operational triggers (enterprise security review, SOC 2 readiness, fundraise diligence, rapid hiring).
 
 Core loop: `Company Profile -> Required State -> Workspace Inventory -> Gap Report -> Compile (approved) -> Guardian`
 
+---
+
+## System Architecture
+
+```mermaid
+flowchart LR
+    subgraph Inputs["Workspace & Profile Inputs"]
+        Profile["Company Profile\n(schema/company-profile.schema.json)"]
+        Rules["Governance Ruleset\n(rules/core-artifacts.json)"]
+        Drive["Shared Drive / Snapshot\n(drive.metadata.readonly)"]
+    end
+
+    subgraph Engine["OpsGraph Deterministic Core (Python 3.10+ stdlib)"]
+        Resolver["State Resolver\n(resolver/)"]
+        Scanner["Inventory Scanner\n(inventory/)"]
+        Store[("SQLite WAL Graph Store\n& Approval Ledger\n(store/)")]
+        Gap["Gap Engine & Scoring\n(gap_engine/)"]
+        Planner["Remediation Planner\n& Ask QA (plan/, qa/)"]
+        Compiler["Non-Destructive Compiler\nCreate-Only (compiler/)"]
+        Guardian["Drift Guardian\n& Delta Digest (guardian/)"]
+    end
+
+    subgraph Outputs["Auditable Outputs"]
+        WorkspaceOut["Compiled Taxonomy,\nMaster Register & Stubs"]
+        DashCert["CALIBRATION Dashboard\n& Readiness Certificate"]
+        Consul["consul-core v1 Client\n(integrations/)"]
+    end
+
+    Profile --> Resolver
+    Rules --> Resolver
+    Drive --> Scanner
+    Resolver --> Store
+    Scanner --> Store
+    Store --> Gap
+    Gap --> Planner
+    Gap --> DashCert
+    Planner --> Store
+    Store -- "Requires Approval Ledger Gate" --> Compiler
+    Compiler --> WorkspaceOut
+    Store --> Guardian
+    Guardian --> DashCert
+    Guardian -. "Optional --propose" .-> Consul
+```
+
+---
+
 ## Install
 
-Requires Python 3.10 or newer. The core engine has no runtime dependencies; the Google Drive
-scanner is an optional extra.
+Requires Python 3.10 or newer. The core engine has **zero third-party runtime dependencies**; the Google Drive live scanner is an optional extra.
 
 ```bash
 git clone https://github.com/creova-gif/opsgraph.git
@@ -40,8 +82,43 @@ opsgraph dashboard --company-id acmecloud-io --output dashboard.html
 opsgraph status acmecloud-io
 ```
 
+---
+
+## Implementation Status
+
+| Subsystem | Status | Notes |
+| :--- | :--- | :--- |
+| **State Resolver (`resolver/`)** | `Implemented & Verified` | Evaluates company profile against 31 governed artifacts (`rules/core-artifacts.json`) in topological order |
+| **Workspace Inventory Scanner (`inventory/`)** | `Implemented & Verified` | Local trees, JSON snapshots, and live Google Drive API (`drive.metadata.readonly` + incremental `changes.list`) |
+| **SQLite WAL Store & Approval Ledger (`store/`)** | `Implemented & Verified` | Versioned profiles, immutable run history, and append-only approval ledger with schema validation |
+| **Gap Analysis Engine (`gap_engine/`)** | `Implemented & Verified` | Required-vs-observed diff, domain scorecards, and 0–100% Infrastructure Readiness Score |
+| **Non-Destructive Compiler (`compiler/`)** | `Implemented & Verified` | Create-only folder taxonomy, versioned `CO-001` Master Register (CSV/JSON), template stubs, and Drive apply reversal manifest |
+| **Drift Guardian & Delta Digest (`guardian/`)** | `Implemented & Verified` | Policy staleness, unapproved drift, duplicate collisions, and run-over-run digest delta |
+| **Remediation Planner & Ask Floor (`plan/`, `qa/`)** | `Implemented & Verified` | P0–P3 dependency-ordered remediation plans (`--from-plan`) and grounded Q&A with citations |
+| **Dashboard & Readiness Certificate (`dashboard/`, `certificate/`)** | `Implemented & Verified` | Single-file CALIBRATION HTML report, preview server, and readiness certificate generator |
+| **Consul Agent Integration (`integrations/`)** | `Deterministic Simulator / Offline Fallback` | `HTTPConsulClient` implements the `consul-core` v1 contract with `StubConsulClient` offline simulation fallback |
+
+---
+
+## Engineering Decisions
+
+Full rationale and trade-off analysis are documented in [ADR 0001: Zero-Dependency Python Core, SQLite WAL Persistence, and Non-Destructive v1 Compiler](docs/adr/0001-sqlite-wal-and-non-destructive-compiler.md).
+
+1. **Zero-Dependency Python Standard Library Core:**
+   - The entire core pipeline (`resolver`, `inventory`, `gap_engine`, `compiler`, `guardian`, `plan`, `qa`, `dashboard`, `certificate`, `store`) relies exclusively on the Python 3.10+ standard library.
+   - **Why:** Eliminates supply-chain bloat, guarantees deterministic offline execution in CI and air-gapped environments, and keeps optional Google Drive OAuth dependencies strictly isolated in `.[drive]`.
+2. **SQLite WAL Graph & Audit Store (`store/store.py`):**
+   - Operational state is persisted in a local SQLite database with Write-Ahead Logging (`PRAGMA journal_mode=WAL`) and foreign keys enforced (`PRAGMA foreign_keys=ON`).
+   - **Why:** Provides ACID transactions, append-only audit trails for every scan/gap/apply run, and an immutable approval ledger without requiring external database containers during concierge onboarding.
+3. **Non-Destructive v1 Compilation (`delete` Prohibited by Protocol):**
+   - `DriveWriteBackend` (`compiler/drive_apply.py`) exposes only `create_folder` and `create_file`. There are no `delete`, `trash`, `move`, or `overwrite` methods in v1.
+   - **Why:** Enterprise and startup operators require a hard structural guarantee that connecting OpsGraph cannot destroy or overwrite existing legal, HR, or security documents. Pre-existing targets are logged as `skip`, and every created object ID (`new_id`) is recorded for deterministic reversal (`docs/engineering/APPLY_REVERSIBILITY.md`).
+4. **Metadata-Only Read Boundary (`drive.metadata.readonly`):**
+   - Inventory scans inspect file metadata (names, paths, MIME types, timestamps, owners) without downloading document bodies or transmitting workspace content to external LLMs. See [SECURITY.md](SECURITY.md).
+
+---
+
 ## Layout
-- `evidence-room/` - YC application preparation evidence room (answers, metrics, demo, interviews)
 - `resolver/` - deterministic state resolver engine (Python) + test suite
 - `inventory/` - read-only workspace metadata scanner: local trees, JSON snapshots, and real Google Drive via `scan --drive` (read-only `drive.metadata.readonly` scope; optional `[drive]` extra; incremental scans via `--state` file + `changes.list` tokens)
 - `store/` - SQLite (WAL) persistence: versioned, schema-validated profiles (`profile save|list|show`), engine-run history (`--record` + `history`), an approval decision ledger (`approve`/`approvals`), and a whole-loop summary (`status`)
@@ -50,13 +127,18 @@ opsgraph status acmecloud-io
 - `guardian/` - company guardian: weekly drift monitoring, policy staleness, and health digest; `--propose` emits remediation proposals per drift event via consul-core
 - `integrations/` - consul-core v1 client seam: HTTP client (bearer token, `OPSGRAPH_CONSUL_TOKEN`) + deterministic local simulation fallback
 - `dashboard/` - interactive visual HTML dashboard & local preview server
-- `docs/pilot/` - concierge pilot offer one-pager, 20-step delivery checklist, intake form
-- `docs/strategy/` - viability brief, execution blueprint, YC playbook (source of truth for decisions)
+- `certificate/` - CALIBRATION readiness certificate renderer
+- `plan/` - dependency-ordered P0–P3 remediation planner
+- `qa/` - deterministic Ask Company Q&A engine grounded in gap/guardian state
+- `onboarding/` - schema-valid company profile initializer (`opsgraph init`)
+- `docs/adr/` - Architecture Decision Records (`0001-sqlite-wal-and-non-destructive-compiler.md`)
 - `docs/architecture/` - OpsGraph–Consul integration contract (`consul-core` v1 surface)
+- `docs/engineering/` - apply reversibility specification and implementation roadmap
+- `docs/pilot/` - concierge pilot offer one-pager, 20-step delivery checklist, intake form
+- `docs/strategy/` - viability brief, execution blueprint, YC playbook (text sources)
 - `schema/company-profile.schema.json` - onboarding output (P0)
 - `rules/core-artifacts.json` - Operating Graph node ruleset (JSON is the single canonical source), 31 governed artifacts + placement policy (v0.3)
 - `examples/` - sample profiles & drive inventories for testing (Seed, Pre-seed, Series A)
-- gstack is available as a user-level skill install; not vendored here
 
 ## Principles
 Specific before broad - evidence before assertion - propose before destructive action - compile, don't
@@ -78,7 +160,6 @@ dump templates - never claim compliance. Delete is never allowed in v1.
 - [x] **Profile Onboarding:** `init` generates a schema-valid company profile from answers (`--name --domain --stage --headcount` + optional fields); unanswered answers land in `provenance.unanswered`, governance approval defaults on (`onboarding/`)
 - [x] **Store-backed Inputs:** every read/execute command — `gap`, `ask`, `plan`, `certificate`, `dashboard`, `guardian`, `compile`, `apply`, `serve` — accepts `--company-id` to resolve the saved profile + latest recorded scan from the store; record once (`profile save` + `scan --record`), run the whole loop from state
 - [x] **Pilot Offer Kit:** 48-Hour offer one-pager, delivery checklist, intake form (`docs/pilot/`)
-- [x] **Evidence Room:** 9-folder structure + draft YC application answers (`evidence-room/`)
 
 ## Testing
 
@@ -92,7 +173,7 @@ on the bundled fixtures.
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Everyone taking part is expected to follow the
-[Code of Conduct](CODE_OF_CONDUCT.md).
+[Code of Conduct](CODE_OF_CONDUCT.md). Security disclosures are covered in [SECURITY.md](SECURITY.md), and release history is tracked in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
